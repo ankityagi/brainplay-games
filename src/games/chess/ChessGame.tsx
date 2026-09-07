@@ -22,9 +22,9 @@ function toQuestion(puzzle: (typeof CHESS_PUZZLES)[number]): QuizQuestion {
   const choices = shuffle([puzzle.correct, ...puzzle.distractors]);
   return {
     prompt: (
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-4">
         <MiniBoard fen={puzzle.fen} />
-        <span className="text-base text-slate-400 font-normal">White to move. Which move is checkmate?</span>
+        <span className="text-lg text-slate-400 font-normal">White to move. Which move is checkmate?</span>
       </div>
     ),
     choices,

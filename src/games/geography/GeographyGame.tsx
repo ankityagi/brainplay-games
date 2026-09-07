@@ -35,9 +35,9 @@ function buildQuestion(pool: Country[], type: GeoQuestionType): QuizQuestion {
     const choices = shuffle([country.name, ...distractors]);
     return {
       prompt: (
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-6xl">{country.flag}</span>
-          <span className="text-base text-slate-400 font-normal">Which country is this?</span>
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-9xl">{country.flag}</span>
+          <span className="text-lg text-slate-400 font-normal">Which country is this?</span>
         </div>
       ),
       choices,

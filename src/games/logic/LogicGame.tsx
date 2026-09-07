@@ -14,8 +14,8 @@ function buildQuestion(config: (typeof LOGIC_STAGES)[number]): QuizQuestion {
   const { choices, correctIndex } = buildChoices(puzzle);
   return {
     prompt: (
-      <div className="flex flex-col items-center gap-3">
-        <div className="flex flex-wrap items-center justify-center gap-2 text-3xl">
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-3 text-5xl">
           {puzzle.items.map((item, i) => (
             <span key={i} className={puzzle.isShape ? '' : 'font-mono'}>
               {item}
@@ -23,7 +23,7 @@ function buildQuestion(config: (typeof LOGIC_STAGES)[number]): QuizQuestion {
           ))}
           <span className="text-slate-500">?</span>
         </div>
-        <span className="text-base text-slate-400 font-normal">What comes next?</span>
+        <span className="text-lg text-slate-400 font-normal">What comes next?</span>
       </div>
     ),
     choices,

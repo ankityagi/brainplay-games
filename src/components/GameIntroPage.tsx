@@ -17,15 +17,15 @@ export default function GameIntroPage() {
 
   return (
     <GameShell game={game}>
-      <div className="max-w-3xl mx-auto w-full px-4 py-8 flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <div className="text-5xl">{game.emoji}</div>
+      <div className="max-w-5xl mx-auto w-full px-4 sm:px-8 py-10 flex flex-col gap-8">
+        <div className="flex items-center gap-5">
+          <div className="text-6xl">{game.emoji}</div>
           <div>
-            <h1 className="text-2xl font-bold">{game.title}</h1>
-            <p className="text-slate-400">{game.tagline}</p>
+            <h1 className="text-3xl font-bold">{game.title}</h1>
+            <p className="text-slate-400 text-lg">{game.tagline}</p>
           </div>
         </div>
-        <div className="text-sm text-slate-500">
+        <div className="text-base text-slate-500">
           {stars > 0 ? `${stars} / 30 stars earned` : 'Play stage 1 to get started'}
         </div>
         <StageSelect gameId={game.id} progress={progress} />

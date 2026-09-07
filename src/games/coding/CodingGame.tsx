@@ -23,11 +23,11 @@ function buildQuestion(config: (typeof CODING_STAGES)[number]): QuizQuestion {
   const choices = shuffle([snippet.answer, ...snippet.distractors]);
   return {
     prompt: (
-      <div className="flex flex-col items-center gap-3 w-full">
-        <pre className="text-left text-base sm:text-lg bg-slate-900 border border-slate-800 rounded-xl p-4 w-full overflow-x-auto font-mono text-emerald-300">
+      <div className="flex flex-col items-center gap-4 w-full">
+        <pre className="text-left text-xl sm:text-2xl bg-slate-900 border border-slate-800 rounded-xl p-6 w-full overflow-x-auto font-mono text-emerald-300">
           {snippet.code}
         </pre>
-        <span className="text-base text-slate-400 font-normal">What does this print?</span>
+        <span className="text-lg text-slate-400 font-normal">What does this print?</span>
       </div>
     ),
     choices,

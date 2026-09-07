@@ -146,13 +146,12 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
     if (dir !== OPPOSITE[directionRef.current]) queuedRef.current = dir;
   }
 
-  const cellPx = boardSize > 15 ? 20 : 24;
   const occupiedSnake = new Set(state.snake.map(cellKey));
   const occupiedObstacles = new Set(state.obstacles.map(cellKey));
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4 py-6">
-      <div className="flex items-center gap-6 text-sm">
+    <div className="flex-1 flex flex-col items-center justify-center gap-5 px-4 py-6">
+      <div className="flex items-center gap-8 text-lg">
         <span className="text-slate-400">
           Score: <span className="text-slate-100 font-bold">{score}</span>
         </span>
@@ -164,8 +163,10 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
       <div
         className="grid bg-slate-900 border border-slate-700 rounded-lg overflow-hidden relative"
         style={{
-          gridTemplateColumns: `repeat(${boardSize}, ${cellPx}px)`,
-          gridTemplateRows: `repeat(${boardSize}, ${cellPx}px)`,
+          width: 'min(85vmin, 46rem)',
+          height: 'min(85vmin, 46rem)',
+          gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
+          gridTemplateRows: `repeat(${boardSize}, 1fr)`,
         }}
       >
         {Array.from({ length: boardSize * boardSize }, (_, i) => {

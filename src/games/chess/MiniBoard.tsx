@@ -36,14 +36,14 @@ interface MiniBoardProps {
 export default function MiniBoard({ fen }: MiniBoardProps) {
   const rows = parsePlacement(fen);
   return (
-    <div className="grid grid-cols-8 w-64 h-64 sm:w-80 sm:h-80 rounded-lg overflow-hidden border border-slate-700 shadow-lg">
+    <div className="grid grid-cols-8 w-[22rem] h-[22rem] sm:w-[30rem] sm:h-[30rem] lg:w-[36rem] lg:h-[36rem] rounded-lg overflow-hidden border border-slate-700 shadow-lg">
       {rows.map((row, r) =>
         row.map((cell, c) => {
           const dark = (r + c) % 2 === 1;
           return (
             <div
               key={`${r}-${c}`}
-              className={`flex items-center justify-center text-3xl sm:text-4xl ${
+              className={`flex items-center justify-center text-4xl sm:text-5xl lg:text-6xl ${
                 dark ? 'bg-slate-700' : 'bg-slate-300'
               }`}
             >

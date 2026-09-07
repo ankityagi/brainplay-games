@@ -40,13 +40,24 @@ export default function MiniBoard({ fen }: MiniBoardProps) {
       {rows.map((row, r) =>
         row.map((cell, c) => {
           const dark = (r + c) % 2 === 1;
+          const labelColor = dark ? 'text-slate-300' : 'text-slate-600';
           return (
             <div
               key={`${r}-${c}`}
-              className={`flex items-center justify-center text-4xl sm:text-5xl lg:text-6xl ${
+              className={`relative flex items-center justify-center text-4xl sm:text-5xl lg:text-6xl ${
                 dark ? 'bg-slate-700' : 'bg-slate-300'
               }`}
             >
+              {c === 0 && (
+                <span className={`absolute top-0.5 left-1 text-[10px] sm:text-xs font-bold ${labelColor}`}>
+                  {8 - r}
+                </span>
+              )}
+              {r === 7 && (
+                <span className={`absolute bottom-0.5 right-1 text-[10px] sm:text-xs font-bold ${labelColor}`}>
+                  {String.fromCharCode(97 + c)}
+                </span>
+              )}
               {cell ? (
                 <span className={/[A-Z]/.test(cell) ? 'text-white drop-shadow' : 'text-slate-950'}>
                   {PIECE_GLYPHS[cell]}

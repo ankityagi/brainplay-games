@@ -3,8 +3,9 @@ import { GameComponentProps } from '../../lib/types';
 import { createRotationPicker } from '../../lib/rotation';
 import { passedFraction, starsForFraction, PASS_THRESHOLD } from '../../lib/scoring';
 import { MAP_COUNTRIES, MapCountry } from './countries';
+import { formatDistanceKm, getWarmthLevel } from './feedback';
 import { MAP_STAGES } from './stages';
-import { MAP_HEIGHT, MAP_WIDTH, WORLD_FEATURES } from './worldGeo';
+import { distanceBetweenCountriesKm, MAP_HEIGHT, MAP_WIDTH, WORLD_FEATURES } from './worldGeo';
 
 // Module-level so the rotation persists across stages within a session (not just one stage).
 const pickTargets = createRotationPicker<MapCountry>((c) => c.id, 'map-countries');
@@ -23,6 +24,7 @@ export default function MapGame({ stage, onFinish }: GameComponentProps) {
   const [correctCount, setCorrectCount] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [guessDistanceKm, setGuessDistanceKm] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(config.timePerQuestion);
 
   const target = targets[index];
@@ -42,9 +44,10 @@ export default function MapGame({ stage, onFinish }: GameComponentProps) {
         setIndex((i) => i + 1);
         setSelectedId(null);
         setFeedback(null);
+        setGuessDistanceKm(null);
         setTimeLeft(config.timePerQuestion);
       }
-    }, 900);
+    }, 1700);
   }
 
   function handleClick(id: string) {
@@ -52,6 +55,7 @@ export default function MapGame({ stage, onFinish }: GameComponentProps) {
     const correct = id === target.id;
     setSelectedId(id);
     setFeedback(correct ? 'correct' : 'wrong');
+    if (!correct) setGuessDistanceKm(distanceBetweenCountriesKm(id, target.id));
     if (correct) setCorrectCount((c) => c + 1);
     advance(correct);
   }
@@ -84,10 +88,26 @@ export default function MapGame({ stage, onFinish }: GameComponentProps) {
         </div>
       </div>
 
-      <div className="shrink-0 text-center">
+      <div className="shrink-0 text-center min-h-[5.5rem]">
         <div className="text-2xl sm:text-3xl font-bold">Click on: {target.name}</div>
-        {config.showHint && <div className="text-base text-slate-400 mt-1">Hint: {target.continent}</div>}
-        <div className="text-base font-mono text-slate-400 mt-1">⏱ {timeLeft}s</div>
+        {feedback === null && (
+          <>
+            {config.showHint && <div className="text-base text-slate-400 mt-1">Hint: {target.continent}</div>}
+            <div className="text-base font-mono text-slate-400 mt-1">⏱ {timeLeft}s</div>
+          </>
+        )}
+        {feedback === 'correct' && (
+          <div className="text-lg font-semibold text-emerald-400 mt-1">🎯 Nailed it!</div>
+        )}
+        {feedback === 'wrong' && guessDistanceKm !== null && (
+          <div className="mt-1">
+            <div className="text-lg font-semibold">
+              {getWarmthLevel(guessDistanceKm).emoji} {getWarmthLevel(guessDistanceKm).label}
+            </div>
+            <div className="text-base text-slate-400">{formatDistanceKm(guessDistanceKm)} from {target.name}</div>
+          </div>
+        )}
+        {feedback === 'timeout' && <div className="text-lg font-semibold text-rose-400 mt-1">⏰ Time&apos;s up!</div>}
       </div>
 
       <div className="flex-1 min-h-0 w-full max-w-5xl flex items-center justify-center">

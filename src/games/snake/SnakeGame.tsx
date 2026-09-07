@@ -63,6 +63,7 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [started, setStarted] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const directionRef = useRef<Direction>('right');
   const queuedRef = useRef<Direction>('right');
   const scoreRef = useRef(0);
@@ -77,6 +78,11 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
     },
     [onFinish, targetScore],
   );
+
+  useEffect(() => {
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    setIsTouchDevice(coarsePointer || navigator.maxTouchPoints > 0);
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -203,23 +209,44 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
         </button>
       )}
 
-      <div className="grid grid-cols-3 gap-2 sm:hidden w-40">
-        <span />
-        <button onClick={() => setDirection('up')} className="bg-slate-800 rounded-lg py-3">
-          ↑
-        </button>
-        <span />
-        <button onClick={() => setDirection('left')} className="bg-slate-800 rounded-lg py-3">
-          ←
-        </button>
-        <button onClick={() => setDirection('down')} className="bg-slate-800 rounded-lg py-3">
-          ↓
-        </button>
-        <button onClick={() => setDirection('right')} className="bg-slate-800 rounded-lg py-3">
-          →
-        </button>
-      </div>
-      <p className="text-xs text-slate-600">Arrow keys or WASD to steer. Eat food, avoid walls and blocks.</p>
+      {isTouchDevice && (
+        <div className="grid grid-cols-3 grid-rows-3 gap-3 w-56 sm:w-64">
+          <span />
+          <button
+            onClick={() => setDirection('up')}
+            aria-label="Move up"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-5 text-3xl select-none touch-manipulation"
+          >
+            ↑
+          </button>
+          <span />
+          <button
+            onClick={() => setDirection('left')}
+            aria-label="Move left"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-5 text-3xl select-none touch-manipulation"
+          >
+            ←
+          </button>
+          <button
+            onClick={() => setDirection('down')}
+            aria-label="Move down"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-5 text-3xl select-none touch-manipulation"
+          >
+            ↓
+          </button>
+          <button
+            onClick={() => setDirection('right')}
+            aria-label="Move right"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-5 text-3xl select-none touch-manipulation"
+          >
+            →
+          </button>
+        </div>
+      )}
+      <p className="text-sm text-slate-600">
+        {isTouchDevice ? 'Tap the arrows to steer.' : 'Arrow keys or WASD to steer.'} Eat food, avoid walls and
+        blocks.
+      </p>
     </div>
   );
 }

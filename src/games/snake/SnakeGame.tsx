@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GameComponentProps } from '../../lib/types';
 import { SNAKE_STAGES } from './stages';
 
@@ -64,6 +64,8 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
   const [gameOver, setGameOver] = useState(false);
   const [started, setStarted] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const boardAreaRef = useRef<HTMLDivElement>(null);
+  const [boardPx, setBoardPx] = useState(280);
   const directionRef = useRef<Direction>('right');
   const queuedRef = useRef<Direction>('right');
   const scoreRef = useRef(0);
@@ -83,6 +85,20 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
     const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
     setIsTouchDevice(coarsePointer || navigator.maxTouchPoints > 0);
   }, []);
+
+  useLayoutEffect(() => {
+    const el = boardAreaRef.current;
+    if (!el) return;
+    const measure = () => {
+      const { width, height } = el.getBoundingClientRect();
+      const size = Math.floor(Math.min(width, height)) - 8;
+      setBoardPx(Math.max(140, Math.min(size, 720)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isTouchDevice]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -156,8 +172,8 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
   const occupiedObstacles = new Set(state.obstacles.map(cellKey));
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-5 px-4 py-6">
-      <div className="flex items-center gap-8 text-lg">
+    <div className="h-full flex flex-col items-center gap-2 px-4 py-3 overflow-hidden">
+      <div className="shrink-0 flex items-center gap-8 text-base sm:text-lg">
         <span className="text-slate-400">
           Score: <span className="text-slate-100 font-bold">{score}</span>
         </span>
@@ -166,56 +182,58 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
         </span>
       </div>
 
-      <div
-        className="grid bg-slate-900 border border-slate-700 rounded-lg overflow-hidden relative"
-        style={{
-          width: 'min(85vmin, 46rem)',
-          height: 'min(85vmin, 46rem)',
-          gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
-          gridTemplateRows: `repeat(${boardSize}, 1fr)`,
-        }}
-      >
-        {Array.from({ length: boardSize * boardSize }, (_, i) => {
-          const x = i % boardSize;
-          const y = Math.floor(i / boardSize);
-          const key = `${x},${y}`;
-          const isHead = state.snake[0].x === x && state.snake[0].y === y;
-          const isSnake = occupiedSnake.has(key);
-          const isFood = state.food.x === x && state.food.y === y;
-          const isObstacle = occupiedObstacles.has(key);
-          let cls = (x + y) % 2 === 0 ? 'bg-slate-900' : 'bg-slate-800/60';
-          if (isSnake) cls = isHead ? 'bg-emerald-400' : 'bg-emerald-600';
-          if (isFood) cls = 'bg-rose-500';
-          if (isObstacle) cls = 'bg-slate-500';
-          return <div key={key} className={cls} />;
-        })}
+      <div ref={boardAreaRef} className="flex-1 min-h-0 w-full flex items-center justify-center">
+        <div
+          className="grid bg-slate-900 border border-slate-700 rounded-lg overflow-hidden relative"
+          style={{
+            width: boardPx,
+            height: boardPx,
+            gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
+            gridTemplateRows: `repeat(${boardSize}, 1fr)`,
+          }}
+        >
+          {Array.from({ length: boardSize * boardSize }, (_, i) => {
+            const x = i % boardSize;
+            const y = Math.floor(i / boardSize);
+            const key = `${x},${y}`;
+            const isHead = state.snake[0].x === x && state.snake[0].y === y;
+            const isSnake = occupiedSnake.has(key);
+            const isFood = state.food.x === x && state.food.y === y;
+            const isObstacle = occupiedObstacles.has(key);
+            let cls = (x + y) % 2 === 0 ? 'bg-slate-900' : 'bg-slate-800/60';
+            if (isSnake) cls = isHead ? 'bg-emerald-400' : 'bg-emerald-600';
+            if (isFood) cls = 'bg-rose-500';
+            if (isObstacle) cls = 'bg-slate-500';
+            return <div key={key} className={cls} />;
+          })}
 
-        {!started && !gameOver && (
-          <button
-            onClick={() => setStarted(true)}
-            className="absolute inset-0 bg-black/60 text-white font-bold flex items-center justify-center text-lg"
-          >
-            Tap or press an arrow key to start
-          </button>
-        )}
+          {!started && !gameOver && (
+            <button
+              onClick={() => setStarted(true)}
+              className="absolute inset-0 bg-black/60 text-white font-bold flex items-center justify-center text-lg text-center px-2"
+            >
+              Tap or press an arrow key to start
+            </button>
+          )}
+        </div>
       </div>
 
       {score >= targetScore && !gameOver && (
         <button
           onClick={() => finish(scoreRef.current)}
-          className="bg-brand-600 hover:bg-brand-500 rounded-lg px-4 py-2 font-semibold text-sm"
+          className="shrink-0 bg-brand-600 hover:bg-brand-500 rounded-lg px-4 py-2 font-semibold text-sm"
         >
           Finish stage now
         </button>
       )}
 
       {isTouchDevice && (
-        <div className="grid grid-cols-3 grid-rows-3 gap-3 w-56 sm:w-64">
+        <div className="shrink-0 grid grid-cols-3 grid-rows-3 gap-2 w-44 sm:w-52">
           <span />
           <button
             onClick={() => setDirection('up')}
             aria-label="Move up"
-            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-5 text-3xl select-none touch-manipulation"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-3 text-2xl select-none touch-manipulation"
           >
             ↑
           </button>
@@ -223,29 +241,28 @@ export default function SnakeGame({ stage, onFinish }: GameComponentProps) {
           <button
             onClick={() => setDirection('left')}
             aria-label="Move left"
-            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-5 text-3xl select-none touch-manipulation"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-3 text-2xl select-none touch-manipulation"
           >
             ←
           </button>
           <button
             onClick={() => setDirection('down')}
             aria-label="Move down"
-            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-5 text-3xl select-none touch-manipulation"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-3 text-2xl select-none touch-manipulation"
           >
             ↓
           </button>
           <button
             onClick={() => setDirection('right')}
             aria-label="Move right"
-            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-5 text-3xl select-none touch-manipulation"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-xl py-3 text-2xl select-none touch-manipulation"
           >
             →
           </button>
         </div>
       )}
-      <p className="text-sm text-slate-600">
-        {isTouchDevice ? 'Tap the arrows to steer.' : 'Arrow keys or WASD to steer.'} Eat food, avoid walls and
-        blocks.
+      <p className="shrink-0 text-xs sm:text-sm text-slate-600 text-center">
+        {isTouchDevice ? 'Tap the arrows to steer.' : 'Arrow keys or WASD to steer.'}
       </p>
     </div>
   );

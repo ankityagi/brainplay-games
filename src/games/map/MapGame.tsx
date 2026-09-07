@@ -7,7 +7,7 @@ import { MAP_STAGES } from './stages';
 import { MAP_HEIGHT, MAP_WIDTH, WORLD_FEATURES } from './worldGeo';
 
 // Module-level so the rotation persists across stages within a session (not just one stage).
-const pickTargets = createRotationPicker<MapCountry>((c) => c.id);
+const pickTargets = createRotationPicker<MapCountry>((c) => c.id, 'map-countries');
 
 type Feedback = 'correct' | 'wrong' | 'timeout' | null;
 

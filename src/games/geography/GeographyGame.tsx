@@ -19,7 +19,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 // Module-level so the rotation persists across stages within a session (not just one stage).
-const pickCountries = createRotationPicker<Country>((c) => c.name);
+const pickCountries = createRotationPicker<Country>((c) => c.name, 'geography-capitals');
 
 function pickDistractorCapitals(pool: Country[], correct: Country, count: number): string[] {
   const values = new Set<string>();

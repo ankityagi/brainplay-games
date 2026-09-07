@@ -12,13 +12,19 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "d3-geo": "^3.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.30.3"
+    "react-router-dom": "^6.30.3",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
+    "@types/d3-geo": "^3.1.0",
+    "@types/geojson": "^7946.0.14",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
+    "@types/topojson-client": "^3.1.4",
     "@typescript-eslint/eslint-plugin": "^6.18.1",
     "@typescript-eslint/parser": "^6.18.1",
     "@vitejs/plugin-react": "^4.2.1",

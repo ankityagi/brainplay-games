@@ -18,6 +18,14 @@ export const GAMES: GameMeta[] = [
     accent: 'from-emerald-500 to-teal-600',
   },
   {
+    id: 'map',
+    title: 'World Map',
+    tagline: 'Click the country on the map',
+    emoji: '🗺️',
+    category: 'learn',
+    accent: 'from-cyan-500 to-sky-600',
+  },
+  {
     id: 'logic',
     title: 'Pattern Master',
     tagline: 'Spot the pattern, crack the sequence',

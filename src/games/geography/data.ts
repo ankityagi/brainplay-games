@@ -7,6 +7,7 @@ export interface Country {
 }
 
 export const COUNTRIES: Country[] = [
+  // Tier 1 - very well known (15)
   { name: 'United States', capital: 'Washington, D.C.', continent: 'North America', flag: '🇺🇸', tier: 1 },
   { name: 'United Kingdom', capital: 'London', continent: 'Europe', flag: '🇬🇧', tier: 1 },
   { name: 'France', capital: 'Paris', continent: 'Europe', flag: '🇫🇷', tier: 1 },
@@ -22,6 +23,8 @@ export const COUNTRIES: Country[] = [
   { name: 'Mexico', capital: 'Mexico City', continent: 'North America', flag: '🇲🇽', tier: 1 },
   { name: 'Egypt', capital: 'Cairo', continent: 'Africa', flag: '🇪🇬', tier: 1 },
   { name: 'Russia', capital: 'Moscow', continent: 'Europe', flag: '🇷🇺', tier: 1 },
+
+  // Tier 2 - moderately known (20)
   { name: 'South Korea', capital: 'Seoul', continent: 'Asia', flag: '🇰🇷', tier: 2 },
   { name: 'Argentina', capital: 'Buenos Aires', continent: 'South America', flag: '🇦🇷', tier: 2 },
   { name: 'South Africa', capital: 'Pretoria', continent: 'Africa', flag: '🇿🇦', tier: 2 },
@@ -42,28 +45,21 @@ export const COUNTRIES: Country[] = [
   { name: 'Peru', capital: 'Lima', continent: 'South America', flag: '🇵🇪', tier: 2 },
   { name: 'Chile', capital: 'Santiago', continent: 'South America', flag: '🇨🇱', tier: 2 },
   { name: 'Colombia', capital: 'Bogotá', continent: 'South America', flag: '🇨🇴', tier: 2 },
+
+  // Tier 3 - trickier (15)
   { name: 'Morocco', capital: 'Rabat', continent: 'Africa', flag: '🇲🇦', tier: 3 },
-  { name: 'Finland', capital: 'Helsinki', continent: 'Europe', flag: '🇫🇮', tier: 2 },
   { name: 'Iceland', capital: 'Reykjavík', continent: 'Europe', flag: '🇮🇸', tier: 3 },
   { name: 'Hungary', capital: 'Budapest', continent: 'Europe', flag: '🇭🇺', tier: 3 },
   { name: 'Czechia', capital: 'Prague', continent: 'Europe', flag: '🇨🇿', tier: 3 },
-  { name: 'Philippines', capital: 'Manila', continent: 'Asia', flag: '🇵🇭', tier: 2 },
   { name: 'Malaysia', capital: 'Kuala Lumpur', continent: 'Asia', flag: '🇲🇾', tier: 3 },
-  { name: 'Saudi Arabia', capital: 'Riyadh', continent: 'Asia', flag: '🇸🇦', tier: 2 },
   { name: 'Israel', capital: 'Jerusalem', continent: 'Asia', flag: '🇮🇱', tier: 3 },
-  { name: 'Ukraine', capital: 'Kyiv', continent: 'Europe', flag: '🇺🇦', tier: 2 },
   { name: 'Ireland', capital: 'Dublin', continent: 'Europe', flag: '🇮🇪', tier: 3 },
   { name: 'Ethiopia', capital: 'Addis Ababa', continent: 'Africa', flag: '🇪🇹', tier: 3 },
   { name: 'Ghana', capital: 'Accra', continent: 'Africa', flag: '🇬🇭', tier: 3 },
   { name: 'Bangladesh', capital: 'Dhaka', continent: 'Asia', flag: '🇧🇩', tier: 3 },
   { name: 'Pakistan', capital: 'Islamabad', continent: 'Asia', flag: '🇵🇰', tier: 3 },
-  { name: 'Denmark', capital: 'Copenhagen', continent: 'Europe', flag: '🇩🇰', tier: 2 },
   { name: 'Austria', capital: 'Vienna', continent: 'Europe', flag: '🇦🇹', tier: 3 },
   { name: 'Belgium', capital: 'Brussels', continent: 'Europe', flag: '🇧🇪', tier: 3 },
-  { name: 'Croatia', capital: 'Zagreb', continent: 'Europe', flag: '🇭🇷', tier: 3 },
   { name: 'Kazakhstan', capital: 'Astana', continent: 'Asia', flag: '🇰🇿', tier: 3 },
-  { name: 'Mongolia', capital: 'Ulaanbaatar', continent: 'Asia', flag: '🇲🇳', tier: 3 },
-  { name: 'Uruguay', capital: 'Montevideo', continent: 'South America', flag: '🇺🇾', tier: 3 },
-  { name: 'Costa Rica', capital: 'San José', continent: 'North America', flag: '🇨🇷', tier: 3 },
   { name: 'Cuba', capital: 'Havana', continent: 'North America', flag: '🇨🇺', tier: 3 },
 ];

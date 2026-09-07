@@ -12,7 +12,7 @@ export const GAMES: GameMeta[] = [
   {
     id: 'geography',
     title: 'Geo Explorer',
-    tagline: 'Flags, capitals and continents',
+    tagline: 'Learn the capital of every country',
     emoji: '🌍',
     category: 'learn',
     accent: 'from-emerald-500 to-teal-600',

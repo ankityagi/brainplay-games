@@ -1,43 +1,38 @@
 import { useEffect, useMemo, useState } from 'react';
 import { GameComponentProps } from '../../lib/types';
+import { createRotationPicker } from '../../lib/rotation';
 import { passedFraction, starsForFraction, PASS_THRESHOLD } from '../../lib/scoring';
 import { MAP_COUNTRIES, MapCountry } from './countries';
 import { MAP_STAGES } from './stages';
 import { MAP_HEIGHT, MAP_WIDTH, WORLD_FEATURES } from './worldGeo';
 
-function randInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function pickTarget(pool: MapCountry[], avoidId: string | null): MapCountry {
-  if (pool.length === 1) return pool[0];
-  let candidate: MapCountry;
-  do {
-    candidate = pool[randInt(0, pool.length - 1)];
-  } while (candidate.id === avoidId);
-  return candidate;
-}
+// Module-level so the rotation persists across stages within a session (not just one stage).
+const pickTargets = createRotationPicker<MapCountry>((c) => c.id);
 
 type Feedback = 'correct' | 'wrong' | 'timeout' | null;
 
 export default function MapGame({ stage, onFinish }: GameComponentProps) {
   const config = MAP_STAGES[stage - 1];
-  const pool = useMemo(() => MAP_COUNTRIES.filter((c) => config.tiers.includes(c.tier)), [config]);
+  const targets = useMemo(() => {
+    const pool = MAP_COUNTRIES.filter((c) => config.tiers.includes(c.tier));
+    return pickTargets(pool, config.questions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
 
   const [index, setIndex] = useState(0);
-  const [target, setTarget] = useState<MapCountry>(() => pickTarget(pool, null));
   const [correctCount, setCorrectCount] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [timeLeft, setTimeLeft] = useState(config.timePerQuestion);
 
-  const isLast = index === config.questions - 1;
+  const target = targets[index];
+  const isLast = index === targets.length - 1;
 
   function advance(wasCorrect: boolean) {
     setTimeout(() => {
       if (isLast) {
         const finalCorrect = correctCount + (wasCorrect ? 1 : 0);
-        const fraction = finalCorrect / config.questions;
+        const fraction = finalCorrect / targets.length;
         onFinish({
           passed: passedFraction(fraction),
           stars: starsForFraction(fraction),
@@ -45,7 +40,6 @@ export default function MapGame({ stage, onFinish }: GameComponentProps) {
         });
       } else {
         setIndex((i) => i + 1);
-        setTarget((prev) => pickTarget(pool, prev.id));
         setSelectedId(null);
         setFeedback(null);
         setTimeLeft(config.timePerQuestion);
@@ -74,7 +68,7 @@ export default function MapGame({ stage, onFinish }: GameComponentProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, feedback]);
 
-  const progressPct = (index / config.questions) * 100;
+  const progressPct = (index / targets.length) * 100;
 
   return (
     <div className="h-full flex flex-col items-center gap-3 px-4 py-3 overflow-hidden">
@@ -84,7 +78,7 @@ export default function MapGame({ stage, onFinish }: GameComponentProps) {
         </div>
         <div className="flex justify-between text-sm text-slate-500 mt-1.5">
           <span>
-            Question {index + 1} / {config.questions}
+            Question {index + 1} / {targets.length}
           </span>
           <span>{correctCount} correct</span>
         </div>

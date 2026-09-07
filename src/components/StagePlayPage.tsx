@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getGameMeta } from '../lib/games';
 import { recordStageCompletion } from '../lib/progress';
@@ -15,6 +15,13 @@ export default function StagePlayPage() {
   const stage = Number(stageParam);
   const [result, setResult] = useState<{ passed: boolean; stars: 0 | 1 | 2 | 3; score: number } | null>(null);
   const [playKey, setPlayKey] = useState(0);
+
+  // Games and stage numbers reuse the same route element (React Router doesn't remount
+  // it just because :gameId/:stage changed), so any leftover result modal or a game's
+  // own mount-only state would otherwise carry over from the previous stage/game.
+  useEffect(() => {
+    setResult(null);
+  }, [gameId, stage]);
 
   if (!game || !Number.isInteger(stage) || stage < 1 || stage > TOTAL_STAGES) {
     return <NotFound />;
@@ -45,7 +52,7 @@ export default function StagePlayPage() {
             <div className="flex-1 flex items-center justify-center text-slate-500">Loading game…</div>
           }
         >
-          <GameComponent key={playKey} stage={stage} onFinish={handleFinish} />
+          <GameComponent key={`${gameId}-${stage}-${playKey}`} stage={stage} onFinish={handleFinish} />
         </Suspense>
       </div>
       {result && (

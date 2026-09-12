@@ -57,6 +57,14 @@ export const GAMES: GameMeta[] = [
     category: 'play',
     accent: 'from-lime-500 to-green-600',
   },
+  {
+    id: 'blaster',
+    title: 'Math Blaster',
+    tagline: 'Shoot the cloud with the right answer',
+    emoji: '🚀',
+    category: 'play',
+    accent: 'from-orange-500 to-red-600',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

@@ -1,0 +1,51 @@
+import { BlasterOperation, BlasterStageConfig } from './stages';
+
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function computeAnswer(a: number, b: number, op: BlasterOperation): number {
+  switch (op) {
+    case '+':
+      return a + b;
+    case '-':
+      return a - b;
+    case '×':
+      return a * b;
+    case '÷':
+      return a / b;
+  }
+}
+
+export interface BlasterProblem {
+  prompt: string;
+  answer: number;
+}
+
+export function generateProblem(config: BlasterStageConfig): BlasterProblem {
+  const op = config.operations[randInt(0, config.operations.length - 1)];
+  let a = randInt(config.min, config.max);
+  let b = randInt(config.min, config.max);
+
+  if (op === '÷') {
+    b = randInt(2, Math.min(config.max, 12));
+    a = b * randInt(2, Math.max(2, Math.floor(config.max / b)));
+  }
+  if (op === '-' && !config.allowNegativeResult && b > a) {
+    [a, b] = [b, a];
+  }
+
+  return { prompt: `${a} ${op} ${b}`, answer: computeAnswer(a, b, op) };
+}
+
+export function generateDistractors(answer: number, count: number): number[] {
+  const values = new Set<number>();
+  let guard = 0;
+  const spread = Math.max(2, Math.round(Math.abs(answer) * 0.3) + 3);
+  while (values.size < count && guard < 100) {
+    guard++;
+    const candidate = answer + randInt(-spread, spread);
+    if (candidate !== answer) values.add(candidate);
+  }
+  return Array.from(values);
+}

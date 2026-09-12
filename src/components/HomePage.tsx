@@ -37,7 +37,7 @@ export default function HomePage() {
       <div className="text-center flex flex-col gap-3">
         <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight">🧠 BrainPlay</h1>
         <p className="text-slate-400 text-lg">
-          Seven free games. No sign-up. Ten stages each, getting trickier as you climb.
+          Eight free games. No sign-up. Ten stages each, getting trickier as you climb.
         </p>
       </div>
       <section>

@@ -21,15 +21,15 @@ export interface DinoStageConfig {
 
 export const DINO_STAGES: DinoStageConfig[] = [
   { npcCount: 4, npcSpeed: 5, minSpawnTier: 0, maxSpawnTier: 2, operations: ['+'], addSubMin: 1, addSubMax: 10, mulDivMin: 2, mulDivMax: 5, allowNegativeResult: false, timePerQuestion: 12, targetScore: 5 },
-  { npcCount: 5, npcSpeed: 6, minSpawnTier: 0, maxSpawnTier: 2, operations: ['+', '-'], addSubMin: 1, addSubMax: 15, mulDivMin: 2, mulDivMax: 5, allowNegativeResult: false, timePerQuestion: 11, targetScore: 6 },
-  { npcCount: 5, npcSpeed: 7, minSpawnTier: 0, maxSpawnTier: 3, operations: ['+', '-'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 6, allowNegativeResult: false, timePerQuestion: 11, targetScore: 7 },
-  { npcCount: 6, npcSpeed: 8, minSpawnTier: 0, maxSpawnTier: 3, operations: ['×'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 6, allowNegativeResult: false, timePerQuestion: 10, targetScore: 8 },
-  { npcCount: 6, npcSpeed: 9, minSpawnTier: 0, maxSpawnTier: 4, operations: ['×', '÷'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 9, allowNegativeResult: false, timePerQuestion: 10, targetScore: 9 },
-  { npcCount: 7, npcSpeed: 10, minSpawnTier: 0, maxSpawnTier: 4, operations: ['+', '-', '×'], addSubMin: 10, addSubMax: 35, mulDivMin: 3, mulDivMax: 9, allowNegativeResult: false, timePerQuestion: 9, targetScore: 10 },
-  { npcCount: 7, npcSpeed: 11, minSpawnTier: 0, maxSpawnTier: 5, operations: ['×', '÷'], addSubMin: 10, addSubMax: 35, mulDivMin: 4, mulDivMax: 12, allowNegativeResult: false, timePerQuestion: 9, targetScore: 11 },
-  { npcCount: 8, npcSpeed: 12, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 15, addSubMax: 45, mulDivMin: 5, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 8, targetScore: 12 },
-  { npcCount: 8, npcSpeed: 13, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 20, addSubMax: 65, mulDivMin: 6, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 8, targetScore: 13 },
-  { npcCount: 9, npcSpeed: 14, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 25, addSubMax: 99, mulDivMin: 7, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 7, targetScore: 15 },
+  { npcCount: 5, npcSpeed: 6, minSpawnTier: 0, maxSpawnTier: 2, operations: ['+', '-'], addSubMin: 1, addSubMax: 15, mulDivMin: 2, mulDivMax: 5, allowNegativeResult: false, timePerQuestion: 11, targetScore: 5 },
+  { npcCount: 5, npcSpeed: 7, minSpawnTier: 0, maxSpawnTier: 3, operations: ['+', '-'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 6, allowNegativeResult: false, timePerQuestion: 11, targetScore: 5 },
+  { npcCount: 6, npcSpeed: 8, minSpawnTier: 0, maxSpawnTier: 3, operations: ['×'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 6, allowNegativeResult: false, timePerQuestion: 10, targetScore: 5 },
+  { npcCount: 6, npcSpeed: 9, minSpawnTier: 0, maxSpawnTier: 4, operations: ['×', '÷'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 9, allowNegativeResult: false, timePerQuestion: 10, targetScore: 5 },
+  { npcCount: 7, npcSpeed: 10, minSpawnTier: 0, maxSpawnTier: 4, operations: ['+', '-', '×'], addSubMin: 10, addSubMax: 35, mulDivMin: 3, mulDivMax: 9, allowNegativeResult: false, timePerQuestion: 9, targetScore: 5 },
+  { npcCount: 7, npcSpeed: 11, minSpawnTier: 0, maxSpawnTier: 5, operations: ['×', '÷'], addSubMin: 10, addSubMax: 35, mulDivMin: 4, mulDivMax: 12, allowNegativeResult: false, timePerQuestion: 9, targetScore: 5 },
+  { npcCount: 8, npcSpeed: 12, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 15, addSubMax: 45, mulDivMin: 5, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 8, targetScore: 5 },
+  { npcCount: 8, npcSpeed: 13, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 20, addSubMax: 65, mulDivMin: 6, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 8, targetScore: 5 },
+  { npcCount: 9, npcSpeed: 14, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 25, addSubMax: 99, mulDivMin: 7, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 7, targetScore: 5 },
 ];
 
 export interface DinoTierInfo {

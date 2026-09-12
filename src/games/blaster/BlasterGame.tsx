@@ -357,28 +357,38 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
         </div>
       </div>
 
-      <div className="shrink-0 text-center min-h-[4.5rem]">
-        {feedback === null && (
-          <>
-            <div className="text-3xl sm:text-4xl font-bold font-mono">{problem.prompt} = ?</div>
-            <div className="text-base font-mono text-slate-400 mt-1">⏱ {timeLeft}s</div>
-          </>
-        )}
-        {feedback?.kind === 'correct' && <div className="text-xl font-semibold text-emerald-400">🎯 Direct hit!</div>}
-        {feedback?.kind === 'wrong' && (
-          <div className="text-xl font-semibold text-rose-400">💥 Wrong cloud! It was {feedback.answer}</div>
-        )}
-        {feedback?.kind === 'timeout' && (
-          <div className="text-xl font-semibold text-rose-400">⏰ Too slow! It was {feedback.answer}</div>
-        )}
-      </div>
+      <div className="flex-1 min-h-0 w-full flex flex-row items-stretch justify-center gap-3 sm:gap-5">
+        <div className="shrink-0 w-28 sm:w-40 flex flex-col items-center justify-center text-center gap-2">
+          {feedback === null && (
+            <>
+              <div className="text-xl sm:text-2xl font-bold font-mono leading-snug break-words">
+                {problem.prompt}
+                <br />= ?
+              </div>
+              <div className="text-sm font-mono text-slate-400">⏱ {timeLeft}s</div>
+            </>
+          )}
+          {feedback?.kind === 'correct' && (
+            <div className="text-base sm:text-lg font-semibold text-emerald-400">🎯 Direct hit!</div>
+          )}
+          {feedback?.kind === 'wrong' && (
+            <div className="text-base sm:text-lg font-semibold text-rose-400">
+              💥 Wrong cloud! It was {feedback.answer}
+            </div>
+          )}
+          {feedback?.kind === 'timeout' && (
+            <div className="text-base sm:text-lg font-semibold text-rose-400">
+              ⏰ Too slow! It was {feedback.answer}
+            </div>
+          )}
+        </div>
 
-      <div ref={wrapRef} className="flex-1 min-h-0 w-full flex items-center justify-center">
-        <div
-          data-testid="playfield"
-          className="relative rounded-lg overflow-hidden bg-gradient-to-b from-sky-800 to-sky-950 border border-slate-700"
-          style={{ width: box.width, height: box.height }}
-        >
+        <div ref={wrapRef} className="flex-1 min-h-0 flex items-center justify-center">
+          <div
+            data-testid="playfield"
+            className="relative rounded-lg overflow-hidden bg-gradient-to-b from-sky-800 to-sky-950 border border-slate-700"
+            style={{ width: box.width, height: box.height }}
+          >
           {decoys.map((d) => (
             <div
               key={d.id}
@@ -457,6 +467,7 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
             />
           </div>
         </div>
+      </div>
       </div>
 
       {isTouchDevice ? (

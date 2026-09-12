@@ -24,12 +24,15 @@ export interface BlasterProblem {
 
 export function generateProblem(config: BlasterStageConfig): BlasterProblem {
   const op = config.operations[randInt(0, config.operations.length - 1)];
-  let a = randInt(config.min, config.max);
-  let b = randInt(config.min, config.max);
+  const isMulDiv = op === '×' || op === '÷';
+  const min = isMulDiv ? config.mulDivMin : config.addSubMin;
+  const max = isMulDiv ? config.mulDivMax : config.addSubMax;
+  let a = randInt(min, max);
+  let b = randInt(min, max);
 
   if (op === '÷') {
-    b = randInt(2, Math.min(config.max, 12));
-    a = b * randInt(2, Math.max(2, Math.floor(config.max / b)));
+    b = randInt(2, max);
+    a = b * randInt(2, Math.max(2, Math.floor(max / b)));
   }
   if (op === '-' && !config.allowNegativeResult && b > a) {
     [a, b] = [b, a];

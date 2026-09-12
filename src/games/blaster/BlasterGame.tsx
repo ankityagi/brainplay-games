@@ -5,9 +5,21 @@ import { generateDistractors, generateProblem } from './generator';
 import { BLASTER_STAGES } from './stages';
 
 const ASPECT_RATIO = 16 / 10;
+const GUN_X = 50;
 const GUN_Y = 92;
+const MAX_TURRET_ANGLE = 65; // degrees from vertical, each side
+const TURRET_ROTATE_SPEED = 80; // degrees per second
+const BARREL_LEN_PCT = 13; // % of playfield height
+
 const CLOUD_LANE_MIN = 14;
 const CLOUD_LANE_MAX = 62;
+const CLOUD_HALF_WIDTH = 8;
+const CLOUD_HALF_HEIGHT = 6;
+const BULLET_SPEED = 70; // % of playfield height per second
+
+// Each sky "row" always drifts at its own fixed relative speed, so rows drift out of
+// sync with each other over time instead of clumping together in lockstep.
+const LANE_SPEED_MULTIPLIERS = [0.8, 1.25, 0.95, 1.1, 0.85];
 
 /** Evenly spread `count` lanes across the usable sky band, regardless of stage's cloud count. */
 function laneYPositions(count: number): number[] {
@@ -15,9 +27,6 @@ function laneYPositions(count: number): number[] {
   const step = (CLOUD_LANE_MAX - CLOUD_LANE_MIN) / (count - 1);
   return Array.from({ length: count }, (_, i) => CLOUD_LANE_MIN + i * step);
 }
-const CLOUD_HALF_WIDTH = 8;
-const CLOUD_HALF_HEIGHT = 6;
-const BULLET_SPEED = 70; // % of playfield height per second
 
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -44,6 +53,8 @@ interface Bullet {
   id: number;
   x: number;
   y: number;
+  vx: number;
+  vy: number;
 }
 
 type Feedback = { kind: 'correct' } | { kind: 'wrong'; answer: number } | { kind: 'timeout'; answer: number } | null;
@@ -51,15 +62,21 @@ type Feedback = { kind: 'correct' } | { kind: 'wrong'; answer: number } | { kind
 let nextId = 1;
 
 function spawnClouds(values: number[], speed: number): Cloud[] {
-  const lanes = shuffle(laneYPositions(values.length));
+  const lanePairs = shuffle(
+    laneYPositions(values.length).map((y, i) => ({
+      y,
+      speedMult: LANE_SPEED_MULTIPLIERS[i % LANE_SPEED_MULTIPLIERS.length],
+    })),
+  );
   return values.map((value, i) => {
     const fromLeft = Math.random() < 0.5;
+    const { y, speedMult } = lanePairs[i];
     return {
       id: nextId++,
       value,
       x: fromLeft ? -CLOUD_HALF_WIDTH : 100 + CLOUD_HALF_WIDTH,
-      y: lanes[i],
-      vx: (fromLeft ? 1 : -1) * speed * (0.85 + Math.random() * 0.3),
+      y,
+      vx: (fromLeft ? 1 : -1) * speed * speedMult,
     };
   });
 }
@@ -72,24 +89,24 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
   const [problem, setProblem] = useState(() => generateProblem(config));
   const [clouds, setClouds] = useState<Cloud[]>([]);
   const [bullets, setBullets] = useState<Bullet[]>([]);
-  const [gunX, setGunX] = useState(50);
+  const [turretAngle, setTurretAngle] = useState(0);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [timeLeft, setTimeLeft] = useState(config.timePerProblem);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [box, setBox] = useState({ width: 640, height: 360 });
+  const [box, setBox] = useState({ width: 640, height: 400 });
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const pressedKeys = useRef<Set<string>>(new Set());
   const cloudsRef = useRef<Cloud[]>([]);
   const bulletsRef = useRef<Bullet[]>([]);
-  const gunXRef = useRef(50);
+  const turretAngleRef = useRef(0);
   const resolvedRef = useRef(false);
   const finishedRef = useRef(false);
   const solvedRef = useRef(0);
 
   cloudsRef.current = clouds;
   bulletsRef.current = bullets;
-  gunXRef.current = gunX;
+  turretAngleRef.current = turretAngle;
 
   const spawnProblem = useCallback(() => {
     const p = generateProblem(config);
@@ -165,7 +182,12 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
 
   function fire() {
     if (resolvedRef.current || bulletsRef.current.length > 0) return;
-    setBullets([{ id: nextId++, x: gunXRef.current, y: GUN_Y }]);
+    const angleRad = (turretAngleRef.current * Math.PI) / 180;
+    const spawnX = GUN_X + (BARREL_LEN_PCT * Math.sin(angleRad)) / ASPECT_RATIO;
+    const spawnY = GUN_Y - BARREL_LEN_PCT * Math.cos(angleRad);
+    const vx = (BULLET_SPEED * Math.sin(angleRad)) / ASPECT_RATIO;
+    const vy = -BULLET_SPEED * Math.cos(angleRad);
+    setBullets([{ id: nextId++, x: spawnX, y: spawnY, vx, vy }]);
   }
 
   // Keyboard controls
@@ -222,11 +244,10 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
       last = now;
 
       if (!resolvedRef.current) {
-        const GUN_SPEED = 55;
         if (pressedKeys.current.has('left')) {
-          setGunX((x) => Math.max(6, x - GUN_SPEED * dt));
+          setTurretAngle((a) => Math.max(-MAX_TURRET_ANGLE, a - TURRET_ROTATE_SPEED * dt));
         } else if (pressedKeys.current.has('right')) {
-          setGunX((x) => Math.min(94, x + GUN_SPEED * dt));
+          setTurretAngle((a) => Math.min(MAX_TURRET_ANGLE, a + TURRET_ROTATE_SPEED * dt));
         }
 
         setClouds((prev) =>
@@ -239,7 +260,9 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
         );
 
         setBullets((prev) => {
-          const moved = prev.map((b) => ({ ...b, y: b.y - BULLET_SPEED * dt })).filter((b) => b.y > -5);
+          const moved = prev
+            .map((b) => ({ ...b, x: b.x + b.vx * dt, y: b.y + b.vy * dt }))
+            .filter((b) => b.y > -5 && b.x > -10 && b.x < 110);
           for (const b of moved) {
             const hit = cloudsRef.current.find(
               (c) => Math.abs(c.x - b.x) < CLOUD_HALF_WIDTH && Math.abs(c.y - b.y) < CLOUD_HALF_HEIGHT,
@@ -271,6 +294,12 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
   }
 
   const px = (pct: number, total: number) => (pct / 100) * total;
+
+  const barrelLenPx = px(BARREL_LEN_PCT, box.height);
+  const barrelWPx = Math.max(6, box.height * 0.045);
+  const baseWPx = Math.max(16, box.height * 0.14);
+  const baseHPx = Math.max(10, box.height * 0.09);
+  const hubDPx = Math.max(10, box.height * 0.07);
 
   return (
     <div className="h-full flex flex-col items-center gap-2 px-4 py-3 overflow-hidden">
@@ -346,12 +375,32 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
             />
           ))}
 
+          {/* Turret: fixed base + a barrel that rotates in place and always fires along its heading. */}
           <div
             data-testid="gun"
-            className="absolute text-4xl sm:text-5xl select-none"
-            style={{ left: px(gunX, box.width), top: px(GUN_Y, box.height), transform: 'translate(-50%, -50%)' }}
+            data-turret-angle={turretAngle}
+            className="absolute"
+            style={{ left: px(GUN_X, box.width), top: px(GUN_Y, box.height) }}
           >
-            🚀
+            <div
+              className="absolute bg-slate-300 rounded-t-full"
+              style={{
+                width: barrelWPx,
+                height: barrelLenPx,
+                left: -barrelWPx / 2,
+                top: -barrelLenPx,
+                transformOrigin: 'bottom center',
+                transform: `rotate(${turretAngle}deg)`,
+              }}
+            />
+            <div
+              className="absolute bg-slate-600 rounded-md border border-slate-500"
+              style={{ width: baseWPx, height: baseHPx, left: -baseWPx / 2, top: -baseHPx / 2 }}
+            />
+            <div
+              className="absolute bg-slate-400 rounded-full border border-slate-200"
+              style={{ width: hubDPx, height: hubDPx, left: -hubDPx / 2, top: -hubDPx / 2 }}
+            />
           </div>
         </div>
       </div>
@@ -362,10 +411,10 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
             onPointerDown={() => holdDirection('left', true)}
             onPointerUp={() => holdDirection('left', false)}
             onPointerLeave={() => holdDirection('left', false)}
-            aria-label="Move left"
+            aria-label="Aim left"
             className="bg-slate-800 active:bg-slate-600 rounded-xl px-6 py-4 text-2xl select-none touch-manipulation"
           >
-            ←
+            ↺
           </button>
           <button
             onClick={fire}
@@ -378,15 +427,15 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
             onPointerDown={() => holdDirection('right', true)}
             onPointerUp={() => holdDirection('right', false)}
             onPointerLeave={() => holdDirection('right', false)}
-            aria-label="Move right"
+            aria-label="Aim right"
             className="bg-slate-800 active:bg-slate-600 rounded-xl px-6 py-4 text-2xl select-none touch-manipulation"
           >
-            →
+            ↻
           </button>
         </div>
       ) : (
         <p className="shrink-0 text-xs sm:text-sm text-slate-600">
-          Arrow keys / A,D to move, Space to fire. Lead the cloud - it keeps drifting while your shot travels!
+          Arrow keys / A,D to aim, Space to fire. Lead the cloud - it keeps drifting while your shot travels!
         </p>
       )}
     </div>

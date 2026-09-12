@@ -21,6 +21,12 @@ const BULLET_SPEED = 70; // % of playfield height per second
 // sync with each other over time instead of clumping together in lockstep.
 const LANE_SPEED_MULTIPLIERS = [0.8, 1.25, 0.95, 1.1, 0.85];
 
+const DECOY_EMOJIS = ['🐦', '✈️', '🎈', '🪁', '🦅', '🐝'];
+const DECOY_Y_MIN = 10;
+const DECOY_Y_MAX = 68;
+const DECOY_HALF_WIDTH = 5;
+const DECOY_HALF_HEIGHT = 5;
+
 /** Evenly spread `count` lanes across the usable sky band, regardless of stage's cloud count. */
 function laneYPositions(count: number): number[] {
   if (count <= 1) return [(CLOUD_LANE_MIN + CLOUD_LANE_MAX) / 2];
@@ -57,6 +63,23 @@ interface Bullet {
   vy: number;
 }
 
+interface Decoy {
+  id: number;
+  emoji: string;
+  x: number;
+  y: number;
+  vx: number;
+}
+
+function moveAndWrap<T extends { x: number; vx: number }>(entities: T[], dt: number, halfWidth: number): T[] {
+  return entities.map((e) => {
+    let x = e.x + e.vx * dt;
+    if (e.vx > 0 && x > 100 + halfWidth) x = -halfWidth;
+    if (e.vx < 0 && x < -halfWidth) x = 100 + halfWidth;
+    return { ...e, x };
+  });
+}
+
 type Feedback = { kind: 'correct' } | { kind: 'wrong'; answer: number } | { kind: 'timeout'; answer: number } | null;
 
 let nextId = 1;
@@ -81,6 +104,19 @@ function spawnClouds(values: number[], speed: number): Cloud[] {
   });
 }
 
+function spawnDecoys(count: number, speed: number): Decoy[] {
+  return Array.from({ length: count }, () => {
+    const fromLeft = Math.random() < 0.5;
+    return {
+      id: nextId++,
+      emoji: DECOY_EMOJIS[randInt(0, DECOY_EMOJIS.length - 1)],
+      x: fromLeft ? -DECOY_HALF_WIDTH : 100 + DECOY_HALF_WIDTH,
+      y: randInt(DECOY_Y_MIN, DECOY_Y_MAX),
+      vx: (fromLeft ? 1 : -1) * speed * (0.8 + Math.random() * 0.4),
+    };
+  });
+}
+
 export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
   const config = BLASTER_STAGES[stage - 1];
 
@@ -88,6 +124,7 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
   const [solvedCount, setSolvedCount] = useState(0);
   const [problem, setProblem] = useState(() => generateProblem(config));
   const [clouds, setClouds] = useState<Cloud[]>([]);
+  const [decoys, setDecoys] = useState<Decoy[]>([]);
   const [bullets, setBullets] = useState<Bullet[]>([]);
   const [turretAngle, setTurretAngle] = useState(0);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -98,6 +135,7 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const pressedKeys = useRef<Set<string>>(new Set());
   const cloudsRef = useRef<Cloud[]>([]);
+  const decoysRef = useRef<Decoy[]>([]);
   const bulletsRef = useRef<Bullet[]>([]);
   const turretAngleRef = useRef(0);
   const resolvedRef = useRef(false);
@@ -105,6 +143,7 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
   const solvedRef = useRef(0);
 
   cloudsRef.current = clouds;
+  decoysRef.current = decoys;
   bulletsRef.current = bullets;
   turretAngleRef.current = turretAngle;
 
@@ -114,6 +153,7 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
     const values = shuffle([p.answer, ...distractors]);
     setProblem(p);
     setClouds(spawnClouds(values, config.cloudSpeed));
+    setDecoys(spawnDecoys(config.decoyCount, config.decoySpeed));
     setBullets([]);
     setFeedback(null);
     resolvedRef.current = false;
@@ -250,33 +290,32 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
           setTurretAngle((a) => Math.min(MAX_TURRET_ANGLE, a + TURRET_ROTATE_SPEED * dt));
         }
 
-        setClouds((prev) =>
-          prev.map((c) => {
-            let x = c.x + c.vx * dt;
-            if (c.vx > 0 && x > 100 + CLOUD_HALF_WIDTH) x = -CLOUD_HALF_WIDTH;
-            if (c.vx < 0 && x < -CLOUD_HALF_WIDTH) x = 100 + CLOUD_HALF_WIDTH;
-            return { ...c, x };
-          }),
-        );
+        setClouds((prev) => moveAndWrap(prev, dt, CLOUD_HALF_WIDTH));
+        setDecoys((prev) => moveAndWrap(prev, dt, DECOY_HALF_WIDTH));
 
         setBullets((prev) => {
           const moved = prev
             .map((b) => ({ ...b, x: b.x + b.vx * dt, y: b.y + b.vy * dt }))
             .filter((b) => b.y > -5 && b.x > -10 && b.x < 110);
+          const survivors: Bullet[] = [];
           for (const b of moved) {
-            const hit = cloudsRef.current.find(
+            const hitCloud = cloudsRef.current.find(
               (c) => Math.abs(c.x - b.x) < CLOUD_HALF_WIDTH && Math.abs(c.y - b.y) < CLOUD_HALF_HEIGHT,
             );
-            if (hit) {
-              if (hit.value === problem.answer) {
+            if (hitCloud) {
+              if (hitCloud.value === problem.answer) {
                 resolve({ kind: 'correct' }, true);
               } else {
                 resolve({ kind: 'wrong', answer: problem.answer }, false);
               }
               return [];
             }
+            const hitDecoy = decoysRef.current.some(
+              (d) => Math.abs(d.x - b.x) < DECOY_HALF_WIDTH && Math.abs(d.y - b.y) < DECOY_HALF_HEIGHT,
+            );
+            if (!hitDecoy) survivors.push(b);
           }
-          return moved;
+          return survivors;
         });
       }
 
@@ -340,6 +379,21 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
           className="relative rounded-lg overflow-hidden bg-gradient-to-b from-sky-800 to-sky-950 border border-slate-700"
           style={{ width: box.width, height: box.height }}
         >
+          {decoys.map((d) => (
+            <div
+              key={d.id}
+              data-testid="decoy"
+              className="absolute flex items-center justify-center text-3xl sm:text-4xl select-none opacity-90"
+              style={{
+                left: px(d.x, box.width),
+                top: px(d.y, box.height),
+                transform: `translate(-50%, -50%) ${d.vx < 0 ? 'scaleX(-1)' : ''}`,
+              }}
+            >
+              {d.emoji}
+            </div>
+          ))}
+
           {clouds.map((c) => (
             <div
               key={c.id}
@@ -435,7 +489,7 @@ export default function BlasterGame({ stage, onFinish }: GameComponentProps) {
         </div>
       ) : (
         <p className="shrink-0 text-xs sm:text-sm text-slate-600">
-          Arrow keys / A,D to aim, Space to fire. Lead the cloud - it keeps drifting while your shot travels!
+          Arrow keys / A,D to aim, Space to fire. Lead the cloud, and watch out for birds and planes in the way!
         </p>
       )}
     </div>

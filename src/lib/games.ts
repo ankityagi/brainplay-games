@@ -65,6 +65,14 @@ export const GAMES: GameMeta[] = [
     category: 'play',
     accent: 'from-orange-500 to-red-600',
   },
+  {
+    id: 'dino',
+    title: 'Dinosaur Chaos',
+    tagline: 'Eat smaller dinos, dodge bigger ones',
+    emoji: '🦖',
+    category: 'play',
+    accent: 'from-teal-600 to-green-700',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

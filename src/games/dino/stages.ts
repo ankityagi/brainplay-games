@@ -1,0 +1,56 @@
+export type DinoOperation = '+' | '-' | '×' | '÷';
+
+export interface DinoStageConfig {
+  /** how many NPC dinos roam the arena at once */
+  npcCount: number;
+  /** NPC wander speed, in % of playfield width per second */
+  npcSpeed: number;
+  /** lowest/highest size tier (0-5) that can spawn on this stage */
+  minSpawnTier: number;
+  maxSpawnTier: number;
+  operations: DinoOperation[];
+  addSubMin: number;
+  addSubMax: number;
+  mulDivMin: number;
+  mulDivMax: number;
+  allowNegativeResult: boolean;
+  timePerQuestion: number;
+  /** dinos you need to eat to clear the stage */
+  targetScore: number;
+}
+
+export const DINO_STAGES: DinoStageConfig[] = [
+  { npcCount: 4, npcSpeed: 5, minSpawnTier: 0, maxSpawnTier: 2, operations: ['+'], addSubMin: 1, addSubMax: 10, mulDivMin: 2, mulDivMax: 5, allowNegativeResult: false, timePerQuestion: 12, targetScore: 5 },
+  { npcCount: 5, npcSpeed: 6, minSpawnTier: 0, maxSpawnTier: 2, operations: ['+', '-'], addSubMin: 1, addSubMax: 15, mulDivMin: 2, mulDivMax: 5, allowNegativeResult: false, timePerQuestion: 11, targetScore: 6 },
+  { npcCount: 5, npcSpeed: 7, minSpawnTier: 0, maxSpawnTier: 3, operations: ['+', '-'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 6, allowNegativeResult: false, timePerQuestion: 11, targetScore: 7 },
+  { npcCount: 6, npcSpeed: 8, minSpawnTier: 0, maxSpawnTier: 3, operations: ['×'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 6, allowNegativeResult: false, timePerQuestion: 10, targetScore: 8 },
+  { npcCount: 6, npcSpeed: 9, minSpawnTier: 0, maxSpawnTier: 4, operations: ['×', '÷'], addSubMin: 5, addSubMax: 25, mulDivMin: 2, mulDivMax: 9, allowNegativeResult: false, timePerQuestion: 10, targetScore: 9 },
+  { npcCount: 7, npcSpeed: 10, minSpawnTier: 0, maxSpawnTier: 4, operations: ['+', '-', '×'], addSubMin: 10, addSubMax: 35, mulDivMin: 3, mulDivMax: 9, allowNegativeResult: false, timePerQuestion: 9, targetScore: 10 },
+  { npcCount: 7, npcSpeed: 11, minSpawnTier: 0, maxSpawnTier: 5, operations: ['×', '÷'], addSubMin: 10, addSubMax: 35, mulDivMin: 4, mulDivMax: 12, allowNegativeResult: false, timePerQuestion: 9, targetScore: 11 },
+  { npcCount: 8, npcSpeed: 12, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 15, addSubMax: 45, mulDivMin: 5, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 8, targetScore: 12 },
+  { npcCount: 8, npcSpeed: 13, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 20, addSubMax: 65, mulDivMin: 6, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 8, targetScore: 13 },
+  { npcCount: 9, npcSpeed: 14, minSpawnTier: 0, maxSpawnTier: 5, operations: ['+', '-', '×', '÷'], addSubMin: 25, addSubMax: 99, mulDivMin: 7, mulDivMax: 12, allowNegativeResult: true, timePerQuestion: 7, targetScore: 15 },
+];
+
+export interface DinoTierInfo {
+  label: string;
+  emoji: string;
+  /** rendered size, in px, at a 100px-tall reference playfield */
+  scale: number;
+}
+
+export const DINO_TIERS: Record<number, DinoTierInfo> = {
+  0: { label: 'Bug', emoji: '🐛', scale: 0.4 },
+  1: { label: 'Hatchling', emoji: '🦎', scale: 0.6 },
+  2: { label: 'Young Diplodocus', emoji: '🦕', scale: 0.8 },
+  3: { label: 'Grown Diplodocus', emoji: '🦕', scale: 1.05 },
+  4: { label: 'Raptor Rex', emoji: '🦖', scale: 1.3 },
+  5: { label: 'Giant T-Rex', emoji: '🦖', scale: 1.6 },
+};
+
+export function starsFor(score: number, target: number): 0 | 1 | 2 | 3 {
+  if (score >= target * 1.4) return 3;
+  if (score >= target * 1.1) return 2;
+  if (score >= target * 0.6) return 1;
+  return 0;
+}

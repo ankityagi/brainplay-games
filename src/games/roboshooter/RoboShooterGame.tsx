@@ -5,8 +5,13 @@ import { ROBOSHOOTER_STAGES } from './stages';
 const ASPECT_RATIO = 16 / 10;
 const HORIZON_Y = 20; // % from top where robots first appear
 const PLAYER_Y = 82; // % from top - reaching here means the robot got the player
-const GUN_X = 50;
-const GUN_Y = 94;
+
+const AIM_SPEED = 60; // % of playfield height per second
+const AIM_MIN_X = 4;
+const AIM_MAX_X = 96;
+const AIM_MIN_Y = 10;
+const AIM_MAX_Y = 92;
+const FIRE_COOLDOWN_MS = 200;
 
 type RobotSize = 'small' | 'medium' | 'large';
 const SIZE_SCALE: Record<RobotSize, number> = { small: 0.8, medium: 1, large: 1.3 };
@@ -26,6 +31,41 @@ interface Robot {
   maxHp: number;
   hue: number;
   hitFlash: boolean;
+}
+
+interface Aim {
+  x: number;
+  y: number;
+}
+
+type Direction = 'left' | 'right' | 'up' | 'down';
+
+interface Box {
+  width: number;
+  height: number;
+}
+
+interface RobotVisual {
+  xPx: number;
+  yPx: number;
+  fontSizePx: number;
+  radiusPx: number;
+  zIndex: number;
+}
+
+function robotVisual(r: Robot, box: Box): RobotVisual {
+  const t = 1 - r.distance;
+  const scale = (MIN_SCALE + (MAX_SCALE - MIN_SCALE) * t * t) * SIZE_SCALE[r.size];
+  const yPct = HORIZON_Y + (PLAYER_Y - HORIZON_Y) * Math.pow(t, 1.4);
+  const xPct = 50 + (r.x0 - 50) * r.distance;
+  const fontSizePx = Math.max(14, box.height * 0.22 * scale);
+  return {
+    xPx: (xPct / 100) * box.width,
+    yPx: (yPct / 100) * box.height,
+    fontSizePx,
+    radiusPx: fontSizePx * 0.6,
+    zIndex: Math.round(t * 1000),
+  };
 }
 
 function starsFor(score: number, target: number): 0 | 1 | 2 | 3 {
@@ -59,23 +99,41 @@ function spawnRobot(config: RoboShooterStageConfig): Robot {
 
 type RoboShooterStageConfig = (typeof ROBOSHOOTER_STAGES)[number];
 
+const DIRECTION_KEYS: Record<string, Direction> = {
+  arrowleft: 'left',
+  a: 'left',
+  arrowright: 'right',
+  d: 'right',
+  arrowup: 'up',
+  w: 'up',
+  arrowdown: 'down',
+  s: 'down',
+};
+
 export default function RoboShooterGame({ stage, onFinish }: GameComponentProps) {
   const config = ROBOSHOOTER_STAGES[stage - 1];
 
   const [robots, setRobots] = useState<Robot[]>([]);
   const [kills, setKills] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [box, setBox] = useState({ width: 640, height: 400 });
+  const [box, setBox] = useState<Box>({ width: 640, height: 400 });
+  const [aim, setAim] = useState<Aim>({ x: 50, y: 55 });
   const [muzzleFlash, setMuzzleFlash] = useState(false);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const robotsRef = useRef<Robot[]>([]);
+  const boxRef = useRef<Box>(box);
+  const aimRef = useRef<Aim>(aim);
   const killsRef = useRef(0);
   const finishedRef = useRef(false);
   const gameOverRef = useRef(false);
   const lastSpawnRef = useRef(0);
+  const lastFireRef = useRef(0);
+  const movementKeys = useRef<Set<Direction>>(new Set());
 
   robotsRef.current = robots;
+  boxRef.current = box;
+  aimRef.current = aim;
 
   const finish = (finalKills: number) => {
     if (finishedRef.current) return;
@@ -110,7 +168,86 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
     return () => observer.disconnect();
   }, []);
 
-  // Main spawn + movement loop
+  function applyHit(id: number) {
+    setRobots((prev) => {
+      const target = prev.find((r) => r.id === id);
+      if (!target) return prev;
+      const nextHp = target.hp - 1;
+      if (nextHp <= 0) {
+        const newKills = killsRef.current + 1;
+        killsRef.current = newKills;
+        setKills(newKills);
+        return prev.filter((r) => r.id !== id);
+      }
+      return prev.map((r) => (r.id === id ? { ...r, hp: nextHp, hitFlash: true } : r));
+    });
+
+    setTimeout(() => {
+      setRobots((prev) => prev.map((r) => (r.id === id ? { ...r, hitFlash: false } : r)));
+    }, 120);
+  }
+
+  function fire() {
+    if (gameOverRef.current) return;
+    const now = performance.now();
+    if (now - lastFireRef.current < FIRE_COOLDOWN_MS) return;
+    lastFireRef.current = now;
+
+    setMuzzleFlash(true);
+    setTimeout(() => setMuzzleFlash(false), 90);
+
+    const currentBox = boxRef.current;
+    const currentAim = aimRef.current;
+    const aimPxX = (currentAim.x / 100) * currentBox.width;
+    const aimPxY = (currentAim.y / 100) * currentBox.height;
+
+    let hitId: number | null = null;
+    let closestDistance = Infinity;
+    for (const r of robotsRef.current) {
+      const v = robotVisual(r, currentBox);
+      const dx = v.xPx - aimPxX;
+      const dy = v.yPx - aimPxY;
+      if (Math.hypot(dx, dy) <= v.radiusPx && r.distance < closestDistance) {
+        closestDistance = r.distance;
+        hitId = r.id;
+      }
+    }
+    if (hitId !== null) applyHit(hitId);
+  }
+
+  // Keyboard controls: arrows/WASD move the aim, Space/Enter fires.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const dir = DIRECTION_KEYS[e.key.toLowerCase()];
+      if (dir) {
+        e.preventDefault();
+        movementKeys.current.add(dir);
+        return;
+      }
+      if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+        e.preventDefault();
+        fire();
+      }
+    }
+    function onKeyUp(e: KeyboardEvent) {
+      const dir = DIRECTION_KEYS[e.key.toLowerCase()];
+      if (dir) movementKeys.current.delete(dir);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function holdDirection(dir: Direction, pressed: boolean) {
+    if (pressed) movementKeys.current.add(dir);
+    else movementKeys.current.delete(dir);
+  }
+
+  // Main spawn + movement + aim loop
   useEffect(() => {
     let raf: number;
     let last = performance.now();
@@ -121,6 +258,21 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
       last = now;
 
       if (!gameOverRef.current) {
+        const dyStep = AIM_SPEED * dt;
+        const dxStep = dyStep / ASPECT_RATIO;
+        if (movementKeys.current.size > 0) {
+          setAim((prev) => {
+            let { x, y } = prev;
+            if (movementKeys.current.has('left')) x -= dxStep;
+            if (movementKeys.current.has('right')) x += dxStep;
+            if (movementKeys.current.has('up')) y -= dyStep;
+            if (movementKeys.current.has('down')) y += dyStep;
+            x = Math.min(AIM_MAX_X, Math.max(AIM_MIN_X, x));
+            y = Math.min(AIM_MAX_Y, Math.max(AIM_MIN_Y, y));
+            return { x, y };
+          });
+        }
+
         lastSpawnRef.current += dt * 1000;
         setRobots((prev) => {
           let next = prev.map((r) => ({ ...r, distance: Math.max(0, r.distance - r.speed * dt) }));
@@ -147,36 +299,14 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
-  function shootRobot(id: number) {
-    if (gameOverRef.current) return;
-    setMuzzleFlash(true);
-    setTimeout(() => setMuzzleFlash(false), 90);
-
-    setRobots((prev) => {
-      const target = prev.find((r) => r.id === id);
-      if (!target) return prev;
-      const nextHp = target.hp - 1;
-      if (nextHp <= 0) {
-        const newKills = killsRef.current + 1;
-        killsRef.current = newKills;
-        setKills(newKills);
-        return prev.filter((r) => r.id !== id);
-      }
-      return prev.map((r) => (r.id === id ? { ...r, hp: nextHp, hitFlash: true } : r));
-    });
-
-    setTimeout(() => {
-      setRobots((prev) => prev.map((r) => (r.id === id ? { ...r, hitFlash: false } : r)));
-    }, 120);
-  }
-
   function finishNow() {
     if (kills >= config.targetKills) finish(kills);
   }
 
-  const px = (pct: number, total: number) => (pct / 100) * total;
-
   const sorted = [...robots].sort((a, b) => b.distance - a.distance);
+  const aimPxX = (aim.x / 100) * box.width;
+  const aimPxY = (aim.y / 100) * box.height;
+  const crosshairSize = Math.max(20, box.height * 0.1);
 
   return (
     <div className="h-full flex flex-col items-center gap-2 px-4 py-3 overflow-hidden">
@@ -192,92 +322,83 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
       <div ref={wrapRef} className="flex-1 min-h-0 w-full flex items-center justify-center">
         <div
           data-testid="playfield"
-          className="relative rounded-lg overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 border border-slate-700 cursor-crosshair"
+          className="relative rounded-lg overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 border border-slate-700"
           style={{ width: box.width, height: box.height }}
         >
           <div
             className="absolute left-0 right-0 bg-gradient-to-b from-indigo-950/60 to-transparent"
-            style={{ top: 0, height: px(HORIZON_Y, box.height) }}
+            style={{ top: 0, height: (HORIZON_Y / 100) * box.height }}
           />
 
           {sorted.map((r) => {
-            const t = 1 - r.distance;
-            const scale = (MIN_SCALE + (MAX_SCALE - MIN_SCALE) * t * t) * SIZE_SCALE[r.size];
-            const y = HORIZON_Y + (PLAYER_Y - HORIZON_Y) * Math.pow(t, 1.4);
-            const x = 50 + (r.x0 - 50) * r.distance;
-            const fontSizePx = Math.max(14, box.height * 0.22 * scale);
+            const v = robotVisual(r, box);
             return (
-              <button
+              <div
                 key={r.id}
                 data-testid="robot"
                 data-robot-hp={r.hp}
                 data-robot-max-hp={r.maxHp}
                 data-robot-distance={r.distance.toFixed(3)}
                 data-robot-size={r.size}
-                onClick={() => shootRobot(r.id)}
-                className="absolute select-none touch-manipulation"
+                className="absolute select-none"
                 style={{
-                  left: px(x, box.width),
-                  top: px(y, box.height),
+                  left: v.xPx,
+                  top: v.yPx,
                   transform: 'translate(-50%, -50%)',
-                  zIndex: Math.round(t * 1000),
+                  zIndex: v.zIndex,
                   lineHeight: 1,
                   filter: `hue-rotate(${r.hue}deg) ${r.hitFlash ? 'brightness(2) saturate(3)' : ''}`,
                   transition: 'filter 80ms',
                 }}
               >
-                <span style={{ fontSize: fontSizePx }}>🤖</span>
+                <span style={{ fontSize: v.fontSizePx }}>🤖</span>
                 {r.maxHp > 1 && (
                   <div
                     className="mt-0.5 mx-auto rounded-full bg-slate-900/70 overflow-hidden border border-slate-600"
-                    style={{ width: fontSizePx * 0.9, height: Math.max(3, fontSizePx * 0.08) }}
+                    style={{ width: v.fontSizePx * 0.9, height: Math.max(3, v.fontSizePx * 0.08) }}
                   >
-                    <div
-                      className="h-full bg-rose-500"
-                      style={{ width: `${(r.hp / r.maxHp) * 100}%` }}
-                    />
+                    <div className="h-full bg-rose-500" style={{ width: `${(r.hp / r.maxHp) * 100}%` }} />
                   </div>
                 )}
-              </button>
+              </div>
             );
           })}
 
-          {/* Player's gun - fixed, first-person, small recoil kick on fire */}
+          {/* Crosshair: the player's aim point, moved with the movement keys/buttons */}
           <div
-            data-testid="gun"
+            data-testid="crosshair"
+            data-aim-x={aim.x.toFixed(2)}
+            data-aim-y={aim.y.toFixed(2)}
             className="absolute pointer-events-none"
             style={{
-              left: px(GUN_X, box.width),
-              top: px(GUN_Y, box.height),
-              transform: `translate(-50%, -50%) translateY(${muzzleFlash ? -6 : 0}px)`,
+              left: aimPxX,
+              top: aimPxY,
+              width: crosshairSize,
+              height: crosshairSize,
+              transform: `translate(-50%, -50%) scale(${muzzleFlash ? 1.3 : 1})`,
               transition: 'transform 90ms',
+              zIndex: 2000,
             }}
           >
-            {muzzleFlash && (
+            <div
+              className={`absolute inset-0 rounded-full border-2 ${muzzleFlash ? 'border-amber-300' : 'border-emerald-400'}`}
+            />
+            <div
+              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${muzzleFlash ? 'bg-amber-300' : 'bg-emerald-400'}`}
+              style={{ width: crosshairSize * 0.15, height: crosshairSize * 0.15 }}
+            />
+            {[0, 90, 180, 270].map((deg) => (
               <div
-                className="absolute rounded-full bg-amber-300/90"
+                key={deg}
+                className={`absolute left-1/2 top-1/2 ${muzzleFlash ? 'bg-amber-300' : 'bg-emerald-400'}`}
                 style={{
-                  width: box.height * 0.1,
-                  height: box.height * 0.1,
-                  left: -box.height * 0.05,
-                  top: -box.height * 0.32,
-                  boxShadow: '0 0 16px 6px rgba(252,211,77,0.7)',
+                  width: 2,
+                  height: crosshairSize * 0.3,
+                  transformOrigin: 'top center',
+                  transform: `translateX(-50%) rotate(${deg}deg) translateY(${crosshairSize * 0.35}px)`,
                 }}
               />
-            )}
-            <div
-              className="bg-slate-300 rounded-t-md"
-              style={{
-                width: box.height * 0.08,
-                height: box.height * 0.22,
-                marginLeft: -box.height * 0.04,
-                marginBottom: -box.height * 0.02,
-              }}
-            />
-            <div
-              className="bg-slate-600 rounded-t-2xl border border-slate-500"
-              style={{ width: box.height * 0.34, height: box.height * 0.16, marginLeft: -box.height * 0.17 }}
-            />
+            ))}
           </div>
 
           {gameOver && (
@@ -297,8 +418,64 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
         </button>
       )}
 
+      <div className="shrink-0 flex items-center justify-center gap-6 sm:gap-10 w-full max-w-md">
+        <button
+          data-testid="fire-button"
+          onClick={fire}
+          aria-label="Fire"
+          className="bg-rose-600 hover:bg-rose-500 active:bg-rose-500 rounded-full w-16 h-16 sm:w-20 sm:h-20 text-sm font-bold select-none touch-manipulation shadow-lg"
+        >
+          FIRE
+        </button>
+
+        <div className="grid grid-cols-3 grid-rows-2 gap-1.5 sm:gap-2">
+          <span />
+          <button
+            data-testid="dpad-up"
+            onPointerDown={() => holdDirection('up', true)}
+            onPointerUp={() => holdDirection('up', false)}
+            onPointerLeave={() => holdDirection('up', false)}
+            aria-label="Aim up"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-lg py-2 px-3 text-lg select-none touch-manipulation"
+          >
+            ↑
+          </button>
+          <span />
+          <button
+            data-testid="dpad-left"
+            onPointerDown={() => holdDirection('left', true)}
+            onPointerUp={() => holdDirection('left', false)}
+            onPointerLeave={() => holdDirection('left', false)}
+            aria-label="Aim left"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-lg py-2 px-3 text-lg select-none touch-manipulation"
+          >
+            ←
+          </button>
+          <button
+            data-testid="dpad-down"
+            onPointerDown={() => holdDirection('down', true)}
+            onPointerUp={() => holdDirection('down', false)}
+            onPointerLeave={() => holdDirection('down', false)}
+            aria-label="Aim down"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-lg py-2 px-3 text-lg select-none touch-manipulation"
+          >
+            ↓
+          </button>
+          <button
+            data-testid="dpad-right"
+            onPointerDown={() => holdDirection('right', true)}
+            onPointerUp={() => holdDirection('right', false)}
+            onPointerLeave={() => holdDirection('right', false)}
+            aria-label="Aim right"
+            className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-lg py-2 px-3 text-lg select-none touch-manipulation"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
       <p className="shrink-0 text-xs sm:text-sm text-slate-600 text-center">
-        Tap or click a robot to shoot it. Do not let one reach the gun!
+        Arrow keys / WASD to aim, Space to fire. Do not let a robot reach the crosshair!
       </p>
     </div>
   );

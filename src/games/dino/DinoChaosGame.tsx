@@ -295,34 +295,35 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
           return updated;
         });
 
-        // other dinos snack on bugs too, so bugs get eaten even when the player isn't around
-        const eatenBugIds = new Set<number>();
+        // predators eat whatever smaller prey they catch - not just bugs - so the
+        // world keeps churning even when the player isn't around
+        const eatenPrey = new Map<number, Npc>();
         for (const predator of movedNpcs) {
           if (predator.tier === 0) continue;
-          for (const bug of movedNpcs) {
-            if (bug.tier !== 0 || eatenBugIds.has(bug.id)) continue;
-            if (dist(predator, bug) < (radiusForTier(predator.tier) + radiusForTier(0)) * 0.55) {
-              eatenBugIds.add(bug.id);
+          for (const prey of movedNpcs) {
+            if (prey.id === predator.id || prey.tier >= predator.tier || eatenPrey.has(prey.id)) continue;
+            if (dist(predator, prey) < (radiusForTier(predator.tier) + radiusForTier(prey.tier)) * 0.55) {
+              eatenPrey.set(prey.id, prey);
             }
           }
         }
-        const withBugsReplaced = eatenBugIds.size
+        const withPreyReplaced = eatenPrey.size
           ? [
-              ...movedNpcs.filter((n) => !eatenBugIds.has(n.id)),
-              ...Array.from({ length: eatenBugIds.size }, () => spawnNpc(playerRef.current, true)),
+              ...movedNpcs.filter((n) => !eatenPrey.has(n.id)),
+              ...Array.from(eatenPrey.values(), (prey) => spawnNpc(playerRef.current, prey.tier === 0)),
             ]
           : movedNpcs;
 
         // guarantee at least one dino bigger than the player exists (unless the
         // player is already at the max tier for the whole game)
-        let finalNpcs = withBugsReplaced;
-        if (myTier < MAX_TIER && !withBugsReplaced.some((n) => n.tier > myTier)) {
+        let finalNpcs = withPreyReplaced;
+        if (myTier < MAX_TIER && !withPreyReplaced.some((n) => n.tier > myTier)) {
           let biggestIdx = -1;
-          withBugsReplaced.forEach((n, i) => {
-            if (n.tier > 0 && (biggestIdx === -1 || n.tier > withBugsReplaced[biggestIdx].tier)) biggestIdx = i;
+          withPreyReplaced.forEach((n, i) => {
+            if (n.tier > 0 && (biggestIdx === -1 || n.tier > withPreyReplaced[biggestIdx].tier)) biggestIdx = i;
           });
           if (biggestIdx !== -1) {
-            finalNpcs = withBugsReplaced.map((n, i) => (i === biggestIdx ? { ...n, tier: myTier + 1 } : n));
+            finalNpcs = withPreyReplaced.map((n, i) => (i === biggestIdx ? { ...n, tier: myTier + 1 } : n));
           }
         }
         setNpcs(finalNpcs);

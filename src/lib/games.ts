@@ -73,6 +73,14 @@ export const GAMES: GameMeta[] = [
     category: 'play',
     accent: 'from-teal-600 to-green-700',
   },
+  {
+    id: 'roboshooter',
+    title: 'RoboShooter',
+    tagline: 'Robots are closing in - don\'t let them reach you',
+    emoji: '🤖',
+    category: 'play',
+    accent: 'from-slate-500 to-rose-600',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

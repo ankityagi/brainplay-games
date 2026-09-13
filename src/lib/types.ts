@@ -1,4 +1,14 @@
-export type GameId = 'math' | 'geography' | 'map' | 'logic' | 'coding' | 'chess' | 'snake' | 'blaster' | 'dino';
+export type GameId =
+  | 'math'
+  | 'geography'
+  | 'map'
+  | 'logic'
+  | 'coding'
+  | 'chess'
+  | 'snake'
+  | 'blaster'
+  | 'dino'
+  | 'roboshooter';
 
 export type GameCategory = 'learn' | 'play';
 

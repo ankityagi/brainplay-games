@@ -376,7 +376,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
                   fontSize: size * 0.8,
                 }}
               >
-                {info.emoji}
+                <span style={{ filter: info.tint ? `hue-rotate(${info.tint}deg)` : undefined }}>{info.emoji}</span>
               </div>
             );
           })}
@@ -393,7 +393,9 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
               transform: 'translate(-50%, -50%)',
             }}
           >
-            {myTierInfo.emoji}
+            <span style={{ filter: myTierInfo.tint ? `hue-rotate(${myTierInfo.tint}deg)` : undefined }}>
+              {myTierInfo.emoji}
+            </span>
           </div>
 
           {!started && !encounter && (

@@ -37,15 +37,17 @@ export interface DinoTierInfo {
   emoji: string;
   /** rendered size, in px, at a 100px-tall reference playfield */
   scale: number;
+  /** CSS hue-rotate degrees, to tell same-emoji tiers apart at a glance */
+  tint: number;
 }
 
 export const DINO_TIERS: Record<number, DinoTierInfo> = {
-  0: { label: 'Bug', emoji: '🐛', scale: 0.4 },
-  1: { label: 'Hatchling', emoji: '🦎', scale: 0.6 },
-  2: { label: 'Young Diplodocus', emoji: '🦕', scale: 0.8 },
-  3: { label: 'Grown Diplodocus', emoji: '🦕', scale: 1.05 },
-  4: { label: 'Raptor Rex', emoji: '🦖', scale: 1.3 },
-  5: { label: 'Giant T-Rex', emoji: '🦖', scale: 1.6 },
+  0: { label: 'Bug', emoji: '🐛', scale: 0.4, tint: 0 },
+  1: { label: 'Lizard', emoji: '🦎', scale: 0.6, tint: 0 },
+  2: { label: 'Velociraptor', emoji: '🦖', scale: 0.85, tint: 0 },
+  3: { label: 'Brontosaurus', emoji: '🦕', scale: 1.1, tint: 0 },
+  4: { label: 'T-Rex', emoji: '🦖', scale: 1.35, tint: -50 },
+  5: { label: 'Spinosaurus', emoji: '🦖', scale: 1.6, tint: 170 },
 };
 
 export function starsFor(score: number, target: number): 0 | 1 | 2 | 3 {

@@ -7,6 +7,7 @@ export type GameId =
   | 'chess'
   | 'snake'
   | 'blaster'
+  | 'dino'
   | 'roboshooter';
 
 export type GameCategory = 'learn' | 'play';

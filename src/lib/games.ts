@@ -66,6 +66,14 @@ export const GAMES: GameMeta[] = [
     accent: 'from-orange-500 to-red-600',
   },
   {
+    id: 'dino',
+    title: 'Dinosaur Chaos',
+    tagline: 'Eat smaller dinos, dodge bigger ones',
+    emoji: '🦖',
+    category: 'play',
+    accent: 'from-teal-600 to-green-700',
+  },
+  {
     id: 'roboshooter',
     title: 'RoboShooter',
     tagline: 'Robots are closing in - don\'t let them reach you',

@@ -10,5 +10,6 @@ export const GAME_COMPONENTS: Record<GameId, LazyExoticComponent<ComponentType<G
   chess: lazy(() => import('../games/chess/ChessGame')),
   snake: lazy(() => import('../games/snake/SnakeGame')),
   blaster: lazy(() => import('../games/blaster/BlasterGame')),
+  dino: lazy(() => import('../games/dino/DinoChaosGame')),
   roboshooter: lazy(() => import('../games/roboshooter/RoboShooterGame')),
 };

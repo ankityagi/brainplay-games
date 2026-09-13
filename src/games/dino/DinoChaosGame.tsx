@@ -270,8 +270,11 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
         const grace = performance.now() < graceUntilRef.current;
         let collided: Npc | null = null;
         const movedNpcs = npcsRef.current.map((n) => {
+          const isPredator = n.tier > myTier;
           let angle = n.angle;
-          if (now > n.nextTurnAt) {
+          if (isPredator) {
+            angle = Math.atan2(nextPlayer.y - n.y, nextPlayer.x - n.x);
+          } else if (now > n.nextTurnAt) {
             angle = Math.random() * Math.PI * 2;
           }
           const r = radiusForTier(n.tier);

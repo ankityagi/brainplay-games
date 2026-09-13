@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GameComponentProps } from '../../lib/types';
+import { MathProblem, generateDistractors, generateProblem } from '../../lib/mathProblem';
 import { ROBOSHOOTER_STAGES } from './stages';
 
 const ASPECT_RATIO = 16 / 10;
@@ -12,6 +13,7 @@ const AIM_MAX_X = 96;
 const AIM_MIN_Y = 10;
 const AIM_MAX_Y = 92;
 const FIRE_COOLDOWN_MS = 200;
+const MAX_AMMO = 5;
 
 type RobotSize = 'small' | 'medium' | 'large';
 const SIZE_SCALE: Record<RobotSize, number> = { small: 0.8, medium: 1, large: 1.3 };
@@ -79,6 +81,15 @@ function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 let nextId = 1;
 
 function spawnRobot(config: RoboShooterStageConfig): Robot {
@@ -119,11 +130,19 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
   const [box, setBox] = useState<Box>({ width: 640, height: 400 });
   const [aim, setAim] = useState<Aim>({ x: 50, y: 55 });
   const [muzzleFlash, setMuzzleFlash] = useState(false);
+  const [ammo, setAmmo] = useState(MAX_AMMO);
+  const [reloading, setReloading] = useState(false);
+  const [problem, setProblem] = useState<MathProblem | null>(null);
+  const [choices, setChoices] = useState<number[]>([]);
+  const [correctIndex, setCorrectIndex] = useState(0);
+  const [answerFeedback, setAnswerFeedback] = useState<{ selected: number; correct: boolean } | null>(null);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const robotsRef = useRef<Robot[]>([]);
   const boxRef = useRef<Box>(box);
   const aimRef = useRef<Aim>(aim);
+  const ammoRef = useRef(ammo);
+  const reloadingRef = useRef(false);
   const killsRef = useRef(0);
   const finishedRef = useRef(false);
   const gameOverRef = useRef(false);
@@ -134,6 +153,7 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
   robotsRef.current = robots;
   boxRef.current = box;
   aimRef.current = aim;
+  ammoRef.current = ammo;
 
   const finish = (finalKills: number) => {
     if (finishedRef.current) return;
@@ -187,11 +207,56 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
     }, 120);
   }
 
+  function spawnMathProblem() {
+    const p = generateProblem(config);
+    const distractors = generateDistractors(p.answer, 3);
+    const options = shuffle([p.answer, ...distractors]);
+    setProblem(p);
+    setChoices(options);
+    setCorrectIndex(options.indexOf(p.answer));
+    setAnswerFeedback(null);
+  }
+
+  function triggerReload() {
+    if (reloadingRef.current) return;
+    reloadingRef.current = true;
+    setReloading(true);
+    spawnMathProblem();
+  }
+
+  function chooseAnswer(i: number) {
+    if (answerFeedback !== null) return;
+    const correct = i === correctIndex;
+    setAnswerFeedback({ selected: i, correct });
+    if (correct) {
+      setTimeout(() => {
+        ammoRef.current = MAX_AMMO;
+        setAmmo(MAX_AMMO);
+        reloadingRef.current = false;
+        setReloading(false);
+        setProblem(null);
+        setAnswerFeedback(null);
+      }, 500);
+    } else {
+      setTimeout(() => {
+        spawnMathProblem();
+      }, 700);
+    }
+  }
+
   function fire() {
-    if (gameOverRef.current) return;
+    if (gameOverRef.current || reloadingRef.current) return;
+    if (ammoRef.current <= 0) {
+      triggerReload();
+      return;
+    }
     const now = performance.now();
     if (now - lastFireRef.current < FIRE_COOLDOWN_MS) return;
     lastFireRef.current = now;
+
+    const nextAmmo = ammoRef.current - 1;
+    ammoRef.current = nextAmmo;
+    setAmmo(nextAmmo);
 
     setMuzzleFlash(true);
     setTimeout(() => setMuzzleFlash(false), 90);
@@ -213,6 +278,8 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
       }
     }
     if (hitId !== null) applyHit(hitId);
+
+    if (nextAmmo <= 0) triggerReload();
   }
 
   // Keyboard controls: arrows/WASD move the aim, Space/Enter fires.
@@ -257,7 +324,7 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
 
-      if (!gameOverRef.current) {
+      if (!gameOverRef.current && !reloadingRef.current) {
         const dyStep = AIM_SPEED * dt;
         const dxStep = dyStep / ASPECT_RATIO;
         if (movementKeys.current.size > 0) {
@@ -310,12 +377,22 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
 
   return (
     <div className="h-full flex flex-col items-center gap-2 px-4 py-3 overflow-hidden">
-      <div className="shrink-0 flex items-center gap-8 text-base sm:text-lg">
+      <div className="shrink-0 flex items-center gap-6 sm:gap-8 text-base sm:text-lg">
         <span className="text-slate-400">
           Kills: <span className="text-slate-100 font-bold">{kills}</span>
         </span>
         <span className="text-slate-400">
           Target: <span className="text-slate-100 font-bold">{config.targetKills}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-slate-400 text-sm sm:text-base mr-0.5">Ammo:</span>
+          {Array.from({ length: MAX_AMMO }, (_, i) => (
+            <span
+              key={i}
+              className={`inline-block rounded-sm ${i < ammo ? 'bg-amber-400' : 'bg-slate-700'}`}
+              style={{ width: 8, height: 14 }}
+            />
+          ))}
         </span>
       </div>
 
@@ -365,6 +442,7 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
           })}
 
           {/* Crosshair: the player's aim point, moved with the movement keys/buttons */}
+          {!reloading && (
           <div
             data-testid="crosshair"
             data-aim-x={aim.x.toFixed(2)}
@@ -400,10 +478,48 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
               />
             ))}
           </div>
+          )}
 
           {gameOver && (
             <div className="absolute inset-0 bg-rose-950/70 flex items-center justify-center text-center px-4">
               <div className="text-lg sm:text-2xl font-bold text-rose-200">A robot reached you!</div>
+            </div>
+          )}
+
+          {reloading && problem && (
+            <div
+              data-testid="reload-overlay"
+              className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center text-center px-4 gap-4"
+            >
+              <div className="text-sm sm:text-base font-semibold text-amber-300">Out of ammo! Solve to reload:</div>
+              <div className="text-2xl sm:text-3xl font-bold font-mono">
+                {problem.prompt} = ?
+              </div>
+              <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
+                {choices.map((choice, i) => {
+                  let style = 'bg-slate-800 hover:bg-slate-700 border-slate-700';
+                  if (answerFeedback !== null) {
+                    if (i === correctIndex) {
+                      style = 'bg-emerald-600 border-emerald-500';
+                    } else if (i === answerFeedback.selected) {
+                      style = 'bg-rose-600 border-rose-500';
+                    } else {
+                      style = 'bg-slate-800 border-slate-700 opacity-50';
+                    }
+                  }
+                  return (
+                    <button
+                      key={i}
+                      data-testid="reload-choice"
+                      onClick={() => chooseAnswer(i)}
+                      disabled={answerFeedback !== null}
+                      className={`rounded-lg border py-3 px-4 font-semibold text-lg transition-colors ${style}`}
+                    >
+                      {choice}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -422,8 +538,9 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
         <button
           data-testid="fire-button"
           onClick={fire}
+          disabled={reloading}
           aria-label="Fire"
-          className="bg-rose-600 hover:bg-rose-500 active:bg-rose-500 rounded-full w-16 h-16 sm:w-20 sm:h-20 text-sm font-bold select-none touch-manipulation shadow-lg"
+          className="bg-rose-600 hover:bg-rose-500 active:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-full w-16 h-16 sm:w-20 sm:h-20 text-sm font-bold select-none touch-manipulation shadow-lg"
         >
           FIRE
         </button>
@@ -475,7 +592,8 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
       </div>
 
       <p className="shrink-0 text-xs sm:text-sm text-slate-600 text-center">
-        Arrow keys / WASD to aim, Space to fire. Do not let a robot reach the crosshair!
+        Arrow keys / WASD to aim, Space to fire. You have {MAX_AMMO} bullets - solve a math problem to reload when
+        you run out. Do not let a robot reach the crosshair!
       </p>
     </div>
   );

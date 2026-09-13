@@ -1,4 +1,6 @@
-export type BlasterOperation = '+' | '-' | '×' | '÷';
+import { MathOperation } from '../../lib/mathProblem';
+
+export type BlasterOperation = MathOperation;
 
 export interface BlasterStageConfig {
   operations: BlasterOperation[];

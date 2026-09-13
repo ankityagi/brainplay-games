@@ -27,10 +27,6 @@ function radiusForTier(tier: number): number {
   return 3.5 + tier * 1.1;
 }
 
-function tierForEaten(eaten: number, startTier: number): number {
-  return Math.min(MAX_TIER, startTier + Math.floor(eaten / 2));
-}
-
 interface Npc {
   id: number;
   x: number;
@@ -54,6 +50,10 @@ let nextId = 1;
 
 export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
   const config = DINO_STAGES[stage - 1];
+  // Clearing a stage's target moves you on to the next dinosaur - your size is fixed
+  // for the whole stage (stage 1 = Lizard, ..., stage 10 = Spinosaurus), it doesn't
+  // grow mid-stage.
+  const myTier = Math.min(MAX_TIER, stage);
 
   const [player, setPlayer] = useState({ x: 50, y: 50 });
   const [npcs, setNpcs] = useState<Npc[]>([]);
@@ -146,8 +146,6 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-
-  const currentTier = tierForEaten(eaten, 1);
 
   function finish(finalScore: number) {
     if (finishedRef.current) return;
@@ -260,8 +258,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
         let nextPlayer = playerRef.current;
         if (dx !== 0 || dy !== 0) {
           const len = Math.hypot(dx, dy) || 1;
-          const tier = tierForEaten(eatenRef.current, 1);
-          const r = radiusForTier(tier);
+          const r = radiusForTier(myTier);
           nextPlayer = {
             x: clamp(playerRef.current.x + (dx / len) * PLAYER_SPEED * dt, r, 100 - r),
             y: clamp(playerRef.current.y + ((dy / len) * PLAYER_SPEED * dt) / ASPECT_RATIO, r, 100 - r),
@@ -289,7 +286,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
             y = clamp(y, r, 100 - r);
           }
           const updated: Npc = { ...n, x, y, angle, nextTurnAt: now > n.nextTurnAt ? now + randInt(WANDER_CHANGE_MIN, WANDER_CHANGE_MAX) : n.nextTurnAt };
-          if (!grace && !collided && dist(nextPlayer, updated) < (radiusForTier(tierForEaten(eatenRef.current, 1)) + r) * 0.55) {
+          if (!grace && !collided && dist(nextPlayer, updated) < (radiusForTier(myTier) + r) * 0.55) {
             collided = updated;
           }
           return updated;
@@ -313,28 +310,25 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
             ]
           : movedNpcs;
 
-        // guarantee at least one dino bigger than the player exists, so growing never
-        // removes the danger - once you outgrow a stage's biggest spawn, promote one
-        const myTierNow = tierForEaten(eatenRef.current, 1);
+        // guarantee at least one dino bigger than the player exists (unless the
+        // player is already at the max tier for the whole game)
         let finalNpcs = withBugsReplaced;
-        if (myTierNow < MAX_TIER && !withBugsReplaced.some((n) => n.tier > myTierNow)) {
+        if (myTier < MAX_TIER && !withBugsReplaced.some((n) => n.tier > myTier)) {
           let biggestIdx = -1;
           withBugsReplaced.forEach((n, i) => {
             if (n.tier > 0 && (biggestIdx === -1 || n.tier > withBugsReplaced[biggestIdx].tier)) biggestIdx = i;
           });
           if (biggestIdx !== -1) {
-            finalNpcs = withBugsReplaced.map((n, i) => (i === biggestIdx ? { ...n, tier: myTierNow + 1 } : n));
+            finalNpcs = withBugsReplaced.map((n, i) => (i === biggestIdx ? { ...n, tier: myTier + 1 } : n));
           }
         }
         setNpcs(finalNpcs);
 
         if (collided) {
-          const myTier = tierForEaten(eatenRef.current, 1);
           const c = collided as Npc;
           if (c.tier < myTier) beginEncounter(c, 'eat');
           else if (c.tier > myTier) beginEncounter(c, 'danger');
         } else {
-          const myTier = tierForEaten(eatenRef.current, 1);
           const nearDanger = finalNpcs.some((n) => n.tier > myTier && dist(nextPlayer, n) < WARN_RADIUS);
           setWarning(nearDanger);
         }
@@ -358,7 +352,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
   }
 
   const px = (pct: number, total: number) => (pct / 100) * total;
-  const myTierInfo = DINO_TIERS[currentTier];
+  const myTierInfo = DINO_TIERS[myTier];
 
   return (
     <div className="h-full flex flex-col items-center gap-2 px-4 py-3 overflow-hidden">
@@ -395,7 +389,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
           {npcs.map((n) => {
             const info = DINO_TIERS[n.tier];
             const size = Math.max(20, box.height * 0.16 * info.scale);
-            const relation = n.tier < currentTier ? 'eat' : n.tier > currentTier ? 'danger' : 'neutral';
+            const relation = n.tier < myTier ? 'eat' : n.tier > myTier ? 'danger' : 'neutral';
             const ringClass =
               relation === 'eat' ? 'ring-2 ring-emerald-400' : relation === 'danger' ? 'ring-2 ring-rose-500' : '';
             return (

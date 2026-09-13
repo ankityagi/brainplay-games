@@ -4,6 +4,28 @@ function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Cycles through every configured operation in shuffled batches, so a stage's rarer
+// operations (e.g. multiplication on an early stage) can't vanish for many questions
+// in a row purely by chance.
+const opQueues = new WeakMap<DinoOperation[], DinoOperation[]>();
+
+function nextOperation(operations: DinoOperation[]): DinoOperation {
+  let queue = opQueues.get(operations);
+  if (!queue || queue.length === 0) {
+    queue = shuffle([...operations]);
+    opQueues.set(operations, queue);
+  }
+  return queue.pop()!;
+}
+
 function computeAnswer(a: number, b: number, op: DinoOperation): number {
   switch (op) {
     case '+':
@@ -24,7 +46,7 @@ export interface DinoProblem {
 }
 
 export function generateProblem(config: DinoStageConfig): DinoProblem {
-  const op = config.operations[randInt(0, config.operations.length - 1)];
+  const op = nextOperation(config.operations);
   const isMulDiv = op === '×' || op === '÷';
   const min = isMulDiv ? config.mulDivMin : config.addSubMin;
   const max = isMulDiv ? config.mulDivMax : config.addSubMax;

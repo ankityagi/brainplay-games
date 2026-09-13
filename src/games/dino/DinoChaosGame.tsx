@@ -81,8 +81,8 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
   startedRef.current = started;
 
   const spawnNpc = useCallback(
-    (avoid: { x: number; y: number }): Npc => {
-      const tier = randInt(config.minSpawnTier, config.maxSpawnTier);
+    (avoid: { x: number; y: number }, isBug: boolean): Npc => {
+      const tier = isBug ? 0 : randInt(config.minSpawnTier, config.maxSpawnTier);
       const r = radiusForTier(tier);
       let x = 50;
       let y = 50;
@@ -109,7 +109,10 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
     setEaten(0);
     eatenRef.current = 0;
     setEncounter(null);
-    setNpcs(Array.from({ length: config.npcCount }, () => spawnNpc(start)));
+    setNpcs([
+      ...Array.from({ length: config.bugCount }, () => spawnNpc(start, true)),
+      ...Array.from({ length: config.npcCount }, () => spawnNpc(start, false)),
+    ]);
     finishedRef.current = false;
     graceUntilRef.current = 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,8 +177,9 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
         setEaten(nextEaten);
       }
       setNpcs((prev) => {
+        const removed = prev.find((n) => n.id === current.npcId);
         const survivors = prev.filter((n) => n.id !== current.npcId);
-        return [...survivors, spawnNpc(playerRef.current)];
+        return [...survivors, spawnNpc(playerRef.current, removed?.tier === 0)];
       });
       graceUntilRef.current = performance.now() + GRACE_MS;
       setEncounter(null);
@@ -290,7 +294,25 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
           }
           return updated;
         });
-        setNpcs(movedNpcs);
+
+        // other dinos snack on bugs too, so bugs get eaten even when the player isn't around
+        const eatenBugIds = new Set<number>();
+        for (const predator of movedNpcs) {
+          if (predator.tier === 0) continue;
+          for (const bug of movedNpcs) {
+            if (bug.tier !== 0 || eatenBugIds.has(bug.id)) continue;
+            if (dist(predator, bug) < (radiusForTier(predator.tier) + radiusForTier(0)) * 0.55) {
+              eatenBugIds.add(bug.id);
+            }
+          }
+        }
+        const finalNpcs = eatenBugIds.size
+          ? [
+              ...movedNpcs.filter((n) => !eatenBugIds.has(n.id)),
+              ...Array.from({ length: eatenBugIds.size }, () => spawnNpc(playerRef.current, true)),
+            ]
+          : movedNpcs;
+        setNpcs(finalNpcs);
 
         if (collided) {
           const myTier = tierForEaten(eatenRef.current, 1);

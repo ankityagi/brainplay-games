@@ -306,12 +306,26 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
             }
           }
         }
-        const finalNpcs = eatenBugIds.size
+        const withBugsReplaced = eatenBugIds.size
           ? [
               ...movedNpcs.filter((n) => !eatenBugIds.has(n.id)),
               ...Array.from({ length: eatenBugIds.size }, () => spawnNpc(playerRef.current, true)),
             ]
           : movedNpcs;
+
+        // guarantee at least one dino bigger than the player exists, so growing never
+        // removes the danger - once you outgrow a stage's biggest spawn, promote one
+        const myTierNow = tierForEaten(eatenRef.current, 1);
+        let finalNpcs = withBugsReplaced;
+        if (myTierNow < MAX_TIER && !withBugsReplaced.some((n) => n.tier > myTierNow)) {
+          let biggestIdx = -1;
+          withBugsReplaced.forEach((n, i) => {
+            if (n.tier > 0 && (biggestIdx === -1 || n.tier > withBugsReplaced[biggestIdx].tier)) biggestIdx = i;
+          });
+          if (biggestIdx !== -1) {
+            finalNpcs = withBugsReplaced.map((n, i) => (i === biggestIdx ? { ...n, tier: myTierNow + 1 } : n));
+          }
+        }
         setNpcs(finalNpcs);
 
         if (collided) {
@@ -321,7 +335,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
           else if (c.tier > myTier) beginEncounter(c, 'danger');
         } else {
           const myTier = tierForEaten(eatenRef.current, 1);
-          const nearDanger = movedNpcs.some((n) => n.tier > myTier && dist(nextPlayer, n) < WARN_RADIUS);
+          const nearDanger = finalNpcs.some((n) => n.tier > myTier && dist(nextPlayer, n) < WARN_RADIUS);
           setWarning(nearDanger);
         }
       }

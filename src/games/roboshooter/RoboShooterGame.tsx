@@ -481,7 +481,10 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
           )}
 
           {gameOver && (
-            <div className="absolute inset-0 bg-rose-950/70 flex items-center justify-center text-center px-4">
+            <div
+              className="absolute inset-0 bg-rose-950/70 flex items-center justify-center text-center px-4"
+              style={{ zIndex: 3000 }}
+            >
               <div className="text-lg sm:text-2xl font-bold text-rose-200">A robot reached you!</div>
             </div>
           )}
@@ -490,6 +493,7 @@ export default function RoboShooterGame({ stage, onFinish }: GameComponentProps)
             <div
               data-testid="reload-overlay"
               className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center text-center px-4 gap-4"
+              style={{ zIndex: 3000 }}
             >
               <div className="text-sm sm:text-base font-semibold text-amber-300">Out of ammo! Solve to reload:</div>
               <div className="text-2xl sm:text-3xl font-bold font-mono">

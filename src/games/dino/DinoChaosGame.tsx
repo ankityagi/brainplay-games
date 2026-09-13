@@ -9,7 +9,7 @@ const WANDER_CHANGE_MIN = 900;
 const WANDER_CHANGE_MAX = 2400;
 const GRACE_MS = 900;
 const WARN_RADIUS = 15;
-const MAX_TIER = 5;
+const MAX_TIER = 10;
 
 function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;

@@ -8,7 +8,8 @@ export type GameId =
   | 'snake'
   | 'blaster'
   | 'dino'
-  | 'roboshooter';
+  | 'roboshooter'
+  | 'sudoku';
 
 export type GameCategory = 'learn' | 'play';
 

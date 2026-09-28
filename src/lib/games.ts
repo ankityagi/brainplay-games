@@ -42,6 +42,14 @@ export const GAMES: GameMeta[] = [
     accent: 'from-fuchsia-500 to-pink-600',
   },
   {
+    id: 'sudoku',
+    title: 'Sudoku',
+    tagline: 'From 4×4 minis up to the classic 9×9',
+    emoji: '#️⃣',
+    category: 'learn',
+    accent: 'from-violet-500 to-purple-600',
+  },
+  {
     id: 'chess',
     title: 'Chess Puzzles',
     tagline: 'Find the winning move',

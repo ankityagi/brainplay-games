@@ -89,6 +89,16 @@ export const GAMES: GameMeta[] = [
     category: 'play',
     accent: 'from-slate-500 to-rose-600',
   },
+  {
+    id: 'racing',
+    title: 'Zoom Valley',
+    tagline: 'Sit in the driver\'s seat and race',
+    emoji: '🏎️',
+    category: 'play',
+    accent: 'from-yellow-400 to-pink-500',
+    embedSrc: '/zoom-valley/index.html',
+    levelsLabel: '2 levels',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

@@ -9,7 +9,8 @@ export type GameId =
   | 'blaster'
   | 'dino'
   | 'roboshooter'
-  | 'sudoku';
+  | 'sudoku'
+  | 'racing';
 
 export type GameCategory = 'learn' | 'play';
 
@@ -20,6 +21,13 @@ export interface GameMeta {
   emoji: string;
   category: GameCategory;
   accent: string;
+  /**
+   * Standalone games that run their own levels (not the 10-stage engine) set this to
+   * the path of a static page under `public/`; the game page then embeds it.
+   */
+  embedSrc?: string;
+  /** Card label when the game doesn't use the shared 10 stages, e.g. "2 levels". */
+  levelsLabel?: string;
 }
 
 export const TOTAL_STAGES = 10;

@@ -20,7 +20,7 @@ function GameGrid({ category }: { category: GameCategory }) {
               <h3 className="text-xl font-bold">{game.title}</h3>
               <p className="text-base text-slate-400 flex-1">{game.tagline}</p>
               <div className="flex items-center justify-between text-sm text-slate-500 mt-2">
-                <span>10 stages</span>
+                <span>{game.levelsLabel ?? '10 stages'}</span>
                 {stars > 0 && <span className="text-amber-400">★ {stars}</span>}
               </div>
             </div>
@@ -37,7 +37,7 @@ export default function HomePage() {
       <div className="text-center flex flex-col gap-3">
         <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight">🧠 BrainPlay</h1>
         <p className="text-slate-400 text-lg">
-          {GAMES.length} free games. No sign-up. Ten stages each, getting trickier as you climb.
+          {GAMES.length} free games. No sign-up. Every game gets trickier as you climb.
         </p>
       </div>
       <section>

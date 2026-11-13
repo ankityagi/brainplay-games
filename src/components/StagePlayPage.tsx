@@ -23,11 +23,11 @@ export default function StagePlayPage() {
     setResult(null);
   }, [gameId, stage]);
 
-  if (!game || !Number.isInteger(stage) || stage < 1 || stage > TOTAL_STAGES) {
+  if (!game || game.embedSrc || !Number.isInteger(stage) || stage < 1 || stage > TOTAL_STAGES) {
     return <NotFound />;
   }
 
-  const GameComponent = GAME_COMPONENTS[game.id as GameId];
+  const GameComponent = GAME_COMPONENTS[game.id as Exclude<GameId, 'racing'>];
 
   function handleFinish(res: { passed: boolean; stars: 0 | 1 | 2 | 3; score: number }) {
     recordStageCompletion(game!.id, { stage, ...res });

@@ -6,6 +6,7 @@ import { GameId } from '../lib/types';
 import GameShell from './GameShell';
 import StageSelect from './StageSelect';
 import NotFound from './NotFound';
+import EmbeddedGame from './EmbeddedGame';
 
 export default function GameIntroPage() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -14,6 +15,14 @@ export default function GameIntroPage() {
   const stars = useMemo(() => Object.values(progress.stages).reduce((s, r) => s + r.stars, 0), [progress]);
 
   if (!game) return <NotFound />;
+
+  if (game.embedSrc) {
+    return (
+      <GameShell game={game}>
+        <EmbeddedGame title={game.title} src={game.embedSrc} />
+      </GameShell>
+    );
+  }
 
   return (
     <GameShell game={game}>

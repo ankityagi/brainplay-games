@@ -335,7 +335,14 @@ const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matc
 
 /* ---------- Renderer and scene ---------- */
 const canvas = $('view');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+// Without WebGL nothing can draw, so swap the half-built menu for a plain explanation.
+const renderer = (() => {
+  try { return new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); }
+  catch (e) {
+    document.body.innerHTML = '<div id="noGl" style="position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;font-family:var(--body)"><div class="panel" style="max-width:460px;padding:24px 28px"><h1 style="font-family:var(--display);color:var(--sun);margin:0 0 8px;font-size:34px">Zoom Valley</h1><p style="margin:0;font-size:17px;line-height:1.5">This browser can\'t show 3D graphics right now, so the race can\'t start. Try opening this page in Chrome, Edge or Safari, or turn on hardware acceleration in the browser\'s settings.</p></div></div>';
+    throw e;
+  }
+})();
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;

@@ -254,7 +254,7 @@ const TRACKS = {
 
 const LEVELS = [
   { id: 1,  track: 'meadow',  name: 'Meadow Warm-up', mode: 'time', laps: 2, opponents: 0, ghost: true, topSpeed: 36, targets: [125, 150, 190] },
-  { id: 2,  track: 'meadow',  name: 'Meadow Cup',     mode: 'race', laps: 3, opponents: 3, topSpeed: 38, aiSpeed: 33 },
+  { id: 2,  track: 'meadow',  name: 'Meadow Cup',     mode: 'race', laps: 3, opponents: 3, topSpeed: 38, aiSpeed: 35.5 },
   { id: 3,  track: 'seaside', name: 'Coast Cruise',   mode: 'time', laps: 2 },
   { id: 4,  track: 'seaside', name: 'Lighthouse Dash', mode: 'race', laps: 3, opponents: 4 },
   { id: 5,  track: 'canyon',  name: 'Canyon Checkpoints', mode: 'time', laps: 2 },
@@ -276,11 +276,11 @@ const RIVALS = [
 // top = top speed, accel = pickup, grip = cornering grip, grass = how much speed is kept on grass.
 // dots are the 1-5 ratings shown on the picker cards.
 const CARS = [
-  { id: 'zippy',   name: 'Zippy',   style: 'racer',   color: '#ffc21a', blurb: 'Good at everything',            stats: { top: 1.0,  accel: 1.0,  grip: 1.0,  grass: 0.5 },  dots: { speed: 3, pickup: 3, grip: 3 } },
-  { id: 'comet',   name: 'Comet',   style: 'rocket',  color: '#3d8bfd', blurb: 'Fastest on the long straights', stats: { top: 1.07, accel: 0.9,  grip: 0.82, grass: 0.45 }, dots: { speed: 5, pickup: 2, grip: 2 } },
-  { id: 'bubbles', name: 'Bubbles', style: 'bumper',  color: '#ff5c8a', blurb: 'Zooms off the line, turns tight', stats: { top: 0.94, accel: 1.18, grip: 1.15, grass: 0.5 },  dots: { speed: 2, pickup: 5, grip: 4 } },
-  { id: 'dusty',   name: 'Dusty',   style: 'buggy',   color: '#ff8c1a', blurb: 'Happy on the grass and dirt',   stats: { top: 0.99, accel: 1.04, grip: 0.95, grass: 0.72 }, dots: { speed: 3, pickup: 3, grip: 3 } },
-  { id: 'stomper', name: 'Stomper', style: 'monster', color: '#20c997', blurb: 'Giant wheels, rolls over anything', stats: { top: 0.95, accel: 0.86, grip: 1.05, grass: 0.9 },  dots: { speed: 2, pickup: 2, grip: 4 } },
+  { id: 'zippy',   name: 'Zippy',   style: 'racer',   color: '#ffc21a', blurb: 'Good at everything',            stats: { top: 1.0,  accel: 1.0,  grip: 1.0,  grass: 0.35 }, dots: { speed: 3, pickup: 3, grip: 3 } },
+  { id: 'comet',   name: 'Comet',   style: 'rocket',  color: '#3d8bfd', blurb: 'Fastest on the long straights', stats: { top: 1.07, accel: 0.9,  grip: 0.82, grass: 0.3 }, dots: { speed: 5, pickup: 2, grip: 2 } },
+  { id: 'bubbles', name: 'Bubbles', style: 'bumper',  color: '#ff5c8a', blurb: 'Zooms off the line, turns tight', stats: { top: 0.94, accel: 1.18, grip: 1.15, grass: 0.35 },  dots: { speed: 2, pickup: 5, grip: 4 } },
+  { id: 'dusty',   name: 'Dusty',   style: 'buggy',   color: '#ff8c1a', blurb: 'Happy on the grass and dirt',   stats: { top: 0.99, accel: 1.04, grip: 0.95, grass: 0.55 }, dots: { speed: 3, pickup: 3, grip: 3 } },
+  { id: 'stomper', name: 'Stomper', style: 'monster', color: '#20c997', blurb: 'Giant wheels, rolls over anything', stats: { top: 0.95, accel: 0.86, grip: 1.05, grass: 0.7 },  dots: { speed: 2, pickup: 2, grip: 4 } },
 ];
 function carById(id) { return CARS.find((c) => c.id === id) || CARS[0]; }
 function playerCar() { return carById(Save.data.car); }
@@ -869,7 +869,7 @@ function startLevel(i) {
   Game.rivals = order.map((k) => {
     const def = others[k % others.length]; const who = RIVALS[k % RIVALS.length];
     const rv = newRacer(T, k, def, who.name, false, k < others.length ? def.color : who.color);
-    rv.paceBias = 0.94 + (k / Math.max(1, n - 1)) * 0.1; return rv;
+    rv.paceBias = 0.97 + (k / Math.max(1, n - 1)) * 0.06; return rv;
   });
   if (n === 0) { const p = Game.player; const st = sampleAt(T, -9); p.x = st.x; p.z = st.z; p.lane = 0; }
   // ghost of your best run on this level
@@ -909,14 +909,14 @@ function updatePlayer(p, dt, canDrive) {
   p.idx = nearestIdx(T, p.x, p.z, p.idx, 40);
   const i = p.idx; const dx = p.x - T.cx[i], dz = p.z - T.cz[i];
   const lat = dx * T.nx(i) + dz * T.nz(i);
-  const offRoad = Math.abs(lat) > T.hw + 1.4;
+  const offRoad = Math.abs(lat) > T.hw + 1.4; p.offRoad = offRoad;
   const cs = (p.def && p.def.stats) || CARS[0].stats;
   let top = (lv.topSpeed || 36) * cs.top; if (offRoad) top *= cs.grass;
   p.throttle = up ? 1 : 0;
   if (up && !down) { if (vf < 0) vf += PHYS.brake * dt; else vf += PHYS.accel * cs.accel * (1 - Math.pow(clamp(vf / top, 0, 1.2), 2)) * dt; }
   if (down) { if (vf > 0.5) vf -= PHYS.brake * dt; else vf = Math.max(-PHYS.reverseMax, vf - PHYS.accel * 0.6 * dt); }
   if (!up && !down) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 3.2 * dt);
-  if (vf > top) vf -= Math.min(vf - top, 14 * dt);
+  if (vf > top) vf -= Math.min(vf - top, (offRoad ? 34 : 14) * dt); // the grass bites hard
   // steering, softer at speed so kids don't spin out
   const st = (left ? 1 : 0) - (right ? 1 : 0);
   p.steer += (st - p.steer) * Math.min(1, dt * (st === 0 ? 7 : 4.5));
@@ -970,7 +970,7 @@ function updateRival(r, dt, canDrive) {
   const base = (lv.aiSpeed || 30) * r.paceBias;
   let maxCurv = 0; for (let d = 10; d <= 70; d += 10) maxCurv = Math.max(maxCurv, Math.abs(T.curv[(r.idx + Math.round(d / T.ds)) % T.N]));
   let target = base * clamp(1 - maxCurv * 16, 0.6, 1);
-  if (!r.finished && !p.finished) { const gap = p.race - r.race; target *= clamp(1 + gap * 0.0022, 0.86, 1.14); } // keep the pack together
+  if (!r.finished && !p.finished) { const gap = p.race - r.race; target *= clamp(1 + gap * 0.004, 0.65, 1.12); } // keep the race close: wait up when far ahead, push when behind
   if (r.finished) target *= 0.6;
   r.speed += clamp(target - r.speed, -12 * dt, 11 * dt);
   // move over if the player is just ahead in our lane

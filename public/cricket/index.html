@@ -225,8 +225,9 @@ const SWING_DUR = 0.3;
 const LATE_MAX = 0.2;      // latest a swing can be (sweet moment after the ball) and still hit
 const EARLY_MAX = 0.26;
 const CONTACT_AHEAD = 0.35; // the bat meets the ball this far in front of the batter's feet
-const BAT_SIDE = 0.32;      // bat sits this far to the off side of the batter's body
-const GUARD = { x: -0.25, z: 0.95 };
+const BAT_SIDE = 0.38;      // bat sits this far to the off side of the batter's body
+// Side-on stance at the popping crease, body just leg side of the stumps so the bat is in front of middle.
+const GUARD = { x: -0.4, z: 1.0 };
 const FIELD = { x: 0, z: 10.06 };
 const ROPE_R = 64;
 const STAR_RUNS = [30, 60, 100];
@@ -237,8 +238,8 @@ const LEVELS = {
   legend: { name: 'Legend', blurb: 'Fast, tricky and only perfect is six', speed: 1.06, window: 0.8, move: 1.1 },
 };
 const BOWLERS = [
-  { name: 'Speedy Sam', style: 'pace', shirt: '#ff6b5c', pants: '#f4f1e6', skin: '#8d5a3b', cap: '#1f3c8f' },
-  { name: 'Twisty Tia', style: 'spin', shirt: '#33c4a0', pants: '#f4f1e6', skin: '#f0c08a', cap: '#7a3fb0' },
+  { name: 'Speedy Sam', type: 'Fast bowler', style: 'pace', shirt: '#ff6b5c', pants: '#f4f1e6', skin: '#8d5a3b', cap: '#1f3c8f' },
+  { name: 'Twisty Tia', type: 'Spin bowler', style: 'spin', shirt: '#33c4a0', pants: '#f4f1e6', skin: '#f0c08a', cap: '#7a3fb0' },
 ];
 // Each delivery: base speed (m/s), where it pitches (metres from the batter's stumps),
 // line it is aimed at (x at the stumps), swing in the air (m/s² sideways), turn off the pitch (m/s sideways) and bounce.
@@ -410,7 +411,7 @@ function startInnings() {
   renderChips(); updateScore(); setPill('', '');
   const first = BOWLERS[game.plan[0].bowler];
   banner('Over 1', 'cool', 1.4);
-  tip(first.name + ' to bowl', 1.4);
+  tip(first.name + ', ' + first.type.toLowerCase() + ', to bowl', 1.4);
   game.phase = 'between'; game.timer = 1.5; game.after = prepareBall;
   canvas.focus();
 }
@@ -426,7 +427,7 @@ function prepareBall() {
   game.ball = null; game.crossing = null; game.pending = null;
   game.fx.stumps = 0; game.fx.bails = []; game.fx.mark = null;
   for (const f of game.fielders) f.chase = false;
-  setPill(game.bowler.name + ' · ball ' + (game.balls % PER_OVER + 1) + ' of 6', '');
+  setPill(game.bowler.name + ' · ' + game.bowler.type, 'Ball ' + (game.balls % PER_OVER + 1) + ' of 6');
   game.phase = 'runup';
 }
 
@@ -449,7 +450,7 @@ function release() {
     swing, turn, e: d.e || 0.5, bounced: 0, t: 0, trail: [], rot: 0, rotRate: d.spin ? 26 : 14,
     crossed: false, hit: false, runs: 0, kind: null, past: false, flightT: 0, grounded: false, crossedRope: false,
   };
-  setPill(game.bowler.name + ' · ball ' + (game.balls % PER_OVER + 1) + ' of 6', d.label);
+  setPill(game.bowler.name + ' · ' + game.bowler.type, d.label);
   game.phase = 'live';
 }
 
@@ -587,7 +588,7 @@ function afterBall() {
     const over = game.balls / PER_OVER;
     const next = BOWLERS[game.plan[over].bowler];
     banner('End of over ' + over, 'cool', 1.6);
-    tip('Next: ' + next.name + (next.style === 'spin' ? ' bowls spin. Watch the turn!' : ' bowls fast. Get ready!'), 1.8);
+    tip('Next: ' + next.name + ', ' + next.type.toLowerCase() + (next.style === 'spin' ? '. Watch the turn!' : '. Get ready!'), 1.8);
     game.chips = []; renderChips();
     game.phase = 'between'; game.timer = 2; game.after = prepareBall;
     return;
@@ -977,9 +978,24 @@ function drawBowler(c) {
   if (bw.state === 'run') { armR = 0.3 + Math.sin(bw.legPh) * 0.5; armL = 0.3 - Math.sin(bw.legPh) * 0.5; }
   if (bw.state === 'gather' || bw.state === 'follow') { armR = bw.arm; armL = bw.state === 'gather' ? Math.PI * 0.85 : 0.6; }
   const r = person(c, bw.x, bw.z, { shirt: B.shirt, pants: B.pants, skin: B.skin, head: 'cap', cap: B.cap, legPh: running ? bw.legPh : null, armL, armR });
+  if (r && (bw.state === 'mark' || bw.state === 'run')) nameTag(c, r.X(0), r.Y(2.0), B.name, B.type);
   if (r && (bw.state === 'mark' || bw.state === 'run' || bw.state === 'gather')) {
     const h = r.hands[1]; c.fillStyle = '#c4202f'; c.beginPath(); c.arc(h.x, h.y, Math.max(1.5, 0.045 * r.s), 0, Math.PI * 2); c.fill();
   }
+}
+function nameTag(c, x, y, name, type) {
+  c.save();
+  c.font = '900 13px Nunito, "Segoe UI", sans-serif';
+  const w1 = c.measureText(name).width;
+  c.font = '800 11px Nunito, "Segoe UI", sans-serif';
+  const w2 = c.measureText(type.toUpperCase()).width;
+  const w = Math.max(w1, w2) + 18, h = 36;
+  c.fillStyle = 'rgba(12,30,48,0.82)'; roundRect(c, x - w / 2, y - h, w, h, 8); c.fill();
+  c.beginPath(); c.moveTo(x - 6, y); c.lineTo(x + 6, y); c.lineTo(x, y + 6); c.closePath(); c.fill();
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#ffffff'; c.font = '900 13px Nunito, "Segoe UI", sans-serif'; c.fillText(name, x, y - h + 12);
+  c.fillStyle = '#ffd23f'; c.font = '800 11px Nunito, "Segoe UI", sans-serif'; c.fillText(type.toUpperCase(), x, y - h + 26);
+  c.restore();
 }
 function batShape(c, hx, hy, s, phi) {
   const dx = Math.sin(phi), dy = Math.cos(phi); // screen direction (y down)
@@ -1003,19 +1019,62 @@ function batAngle() {
     if (u < 1) { const e = (u - k) / (1 - k); return lerp(0, -150, 1 - (1 - e) * (1 - e)) * DEG; }
     return -150 * DEG;
   }
-  if (game.phase === 'live') return 55 * DEG; // backlift, ready to play
+  if (game.phase === 'live') return 145 * DEG; // bat raised in the backlift, ready to play
   return (14 + Math.max(0, Math.sin(bt.idle * 3)) * 10) * DEG; // tapping the bat
 }
+// Right-handed batter in a side-on stance, seen from behind the stumps: chest turned to the off side (right),
+// front shoulder and front foot toward the bowler, feet either side of the popping crease.
 function drawBatter(c) {
-  const bt = game.batter;
+  const bt = game.batter, x = bt.x, z = bt.z;
   const phi = batAngle();
-  const base = P(bt.x, 0, bt.z); if (!base) return;
+  const base = P(x, 0, z); if (!base) return;
   const s = base.s;
-  // Hands move with the bat: the bat swings around a point in front of the chest.
-  const hx = 0.16 + Math.sin(phi) * 0.12, hy = 1.0 + (1 - Math.cos(phi)) * 0.18;
-  const r = person(c, bt.x, bt.z, { shirt: '#3c8dde', pants: '#f4f1e6', skin: '#b97a50', head: 'helmet', cap: '#14285a', pads: true, back: true, number: 7, glove: '#ffffff', crouch: 0.25, hands: [[hx - 0.05, hy + 0.03], [hx + 0.03, hy - 0.03]] });
-  if (!r) return;
-  batShape(c, base.x + hx * s, base.y - hy * s, s, phi);
+  const line = (pts, w, col) => {
+    const q = pts.map((p) => P(p[0], p[1], p[2])); if (q.some((v) => !v)) return;
+    c.strokeStyle = col; c.lineWidth = w * s; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(q[0].x, q[0].y); for (let i = 1; i < q.length; i++) c.lineTo(q[i].x, q[i].y); c.stroke();
+  };
+  const dot = (p, r, col) => { const q = P(p[0], p[1], p[2]); if (!q) return; c.fillStyle = col; c.beginPath(); c.arc(q.x, q.y, r * q.s, 0, Math.PI * 2); c.fill(); };
+  const swingK = bt.swingT != null ? clamp((game.T - bt.swingT) / SWING_DUR, 0, 1) : 0;
+  const stride = swingK > 0 ? Math.sin(Math.min(1, swingK * 2) * Math.PI / 2) * 0.12 : 0; // front foot steps in as he plays
+  const pants = '#f4f1e6', pad = '#ffffff', shirt = '#3c8dde', skin = '#b97a50', helmet = '#14285a', shoe = '#2b2f36';
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,0.2)'; c.beginPath(); c.ellipse(base.x + 0.04 * s, base.y - 0.03 * s, 0.32 * s, 0.09 * s, 0, 0, Math.PI * 2); c.fill();
+  const backFoot = [x - 0.13, 0.05, z - 0.1], frontFoot = [x + 0.09, 0.05, z + 0.3 + stride];
+  const hipY = 0.86;
+  const backKnee = [x - 0.08, 0.46, z - 0.02], frontKnee = [x + 0.14, 0.47, z + 0.22 + stride * 0.6];
+  line([frontKnee, frontFoot], 0.17, pad); line([[x + 0.07, hipY, z + 0.12], frontKnee], 0.16, pants);
+  line([[frontFoot[0], 0.04, frontFoot[2]], [frontFoot[0] + 0.13, 0.04, frontFoot[2]]], 0.08, shoe);
+  line([[x - 0.07, hipY, z], backKnee], 0.16, pants); line([backKnee, backFoot], 0.17, pad);
+  line([[backFoot[0], 0.04, backFoot[2]], [backFoot[0] + 0.13, 0.04, backFoot[2]]], 0.08, shoe);
+  // torso, bent forward at the hips and leaning a little over the bat
+  const lean = 0.06 + swingK * 0.05;
+  const hc = P(x, hipY - 0.04, z + 0.06), sc = P(x + lean, 1.4, z + 0.06);
+  if (hc && sc) {
+    const hw = 0.17 * hc.s, sw = 0.21 * sc.s;
+    c.fillStyle = shirt; c.beginPath();
+    c.moveTo(hc.x - hw, hc.y); c.lineTo(sc.x - sw, sc.y + 0.05 * sc.s);
+    c.quadraticCurveTo(sc.x, sc.y - 0.06 * sc.s, sc.x + sw, sc.y + 0.05 * sc.s);
+    c.lineTo(hc.x + hw, hc.y); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.85)'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = '900 ' + Math.max(8, 0.2 * sc.s) + 'px Nunito, sans-serif'; c.fillText('7', (hc.x + sc.x) / 2, (hc.y + sc.y) / 2);
+  }
+  // hands follow the bat round a point in front of the waist
+  const hx = x + 0.3 + Math.sin(phi) * 0.1, hy = 0.92 + (1 - Math.cos(phi)) * 0.2;
+  const hand = [hx, hy, z + 0.1];
+  const leftShoulder = [x + lean - 0.17, 1.33, z + 0.06], rightShoulder = [x + lean + 0.17, 1.33, z + 0.06];
+  line([leftShoulder, [(leftShoulder[0] + hx) / 2, (hy + 1.33) / 2 - 0.05, z + 0.1], hand], 0.09, shirt);
+  line([rightShoulder, [(rightShoulder[0] + hx) / 2 + 0.03, (hy + 1.33) / 2, z + 0.06], hand], 0.09, shirt);
+  // head and helmet, turned to watch the bowler
+  const head = [x + lean, 1.58, z + 0.08];
+  dot([head[0], 1.44, head[2]], 0.06, skin);
+  dot(head, 0.155, helmet);
+  dot([head[0] - 0.04, head[1] + 0.06, head[2]], 0.05, 'rgba(255,255,255,0.22)');
+  line([[head[0] + 0.11, head[1] - 0.03, head[2] + 0.04], [head[0] + 0.15, head[1] - 0.09, head[2] + 0.06]], 0.035, '#c9ced6');
+  // gloves and bat
+  const hp = P(hand[0], hand[1], hand[2]); if (!hp) return;
+  batShape(c, hp.x, hp.y, hp.s, phi);
+  dot(hand, 0.06, '#ffffff');
 }
 
 function drawBallShadow(c) {

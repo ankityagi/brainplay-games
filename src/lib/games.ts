@@ -119,6 +119,16 @@ export const GAMES: GameMeta[] = [
     embedSrc: '/dino-duel/index.html',
     levelsLabel: '10 levels',
   },
+  {
+    id: 'dinotrucks',
+    title: 'Dino Truck Rumble',
+    tagline: 'Race dino trucks and chomp your rivals',
+    emoji: '🦖',
+    category: 'play',
+    accent: 'from-amber-400 to-red-600',
+    embedSrc: '/dino-trucks/index.html',
+    levelsLabel: '6 levels',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

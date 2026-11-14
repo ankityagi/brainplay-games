@@ -64,3 +64,28 @@ describe('Dino Duel fighting page', () => {
     expect(html).toContain('LEVEL_COUNT = 10');
   });
 });
+
+describe('Dino Truck Rumble racing page', () => {
+  const html = readFileSync(resolve(__dirname, '../public/dino-trucks/index.html'), 'utf8');
+
+  it('is listed as the dino truck racing game and opens its own page', () => {
+    const game = GAMES.find((g) => g.id === 'dinotrucks');
+    expect(game?.embedSrc).toBe('/dino-trucks/index.html');
+    expect(game?.category).toBe('play');
+  });
+
+  it('only loads its own copy of three.js', () => {
+    const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
+    expect(srcs).toEqual(['/dino-trucks/three.min.js']);
+  });
+
+  it('has the five dino trucks, each with an attack, and 6 levels', () => {
+    for (const name of ['T-Rex', 'Spinosaurus', 'Ankylosaurus', 'Triceratops', 'Velociraptor']) {
+      expect(html).toContain(`name: '${name}'`);
+    }
+    for (const kind of ['chomp', 'swipe', 'club', 'ram', 'pounce']) {
+      expect(html).toContain(`kind: '${kind}'`);
+    }
+    expect((html.match(/\{ id: \d, track: '/g) || []).length).toBe(6);
+  });
+});

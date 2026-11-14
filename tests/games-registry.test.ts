@@ -24,3 +24,21 @@ describe('game registry', () => {
     expect(existsSync(resolve(__dirname, '../public/zoom-valley/three.min.js'))).toBe(true);
   });
 });
+
+describe('Boundary Bash cricket page', () => {
+  const html = readFileSync(resolve(__dirname, '../public/cricket/index.html'), 'utf8');
+
+  it('is listed as the cricket game and opens its own page', () => {
+    const game = GAMES.find((g) => g.id === 'cricket');
+    expect(game?.embedSrc).toBe('/cricket/index.html');
+  });
+
+  it('loads no outside scripts', () => {
+    expect(html).not.toMatch(/<script[^>]+src=/);
+  });
+
+  it('plays a 5-over innings of 6-ball overs', () => {
+    expect(html).toContain('const OVERS = 5;');
+    expect(html).toContain('const PER_OVER = 6;');
+  });
+});

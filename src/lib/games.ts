@@ -99,6 +99,16 @@ export const GAMES: GameMeta[] = [
     embedSrc: '/zoom-valley/index.html',
     levelsLabel: '2 levels',
   },
+  {
+    id: 'cricket',
+    title: 'Boundary Bash',
+    tagline: 'Cricket! Time your shot to hit a six',
+    emoji: '🏏',
+    category: 'play',
+    accent: 'from-lime-400 to-emerald-600',
+    embedSrc: '/cricket/index.html',
+    levelsLabel: '3 levels',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

@@ -2,7 +2,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getGameMeta } from '../lib/games';
 import { recordStageCompletion } from '../lib/progress';
-import { GameId, TOTAL_STAGES } from '../lib/types';
+import { EmbeddedGameId, GameId, TOTAL_STAGES } from '../lib/types';
 import { GAME_COMPONENTS } from '../lib/registry';
 import GameShell from './GameShell';
 import ResultModal from './ResultModal';
@@ -27,7 +27,7 @@ export default function StagePlayPage() {
     return <NotFound />;
   }
 
-  const GameComponent = GAME_COMPONENTS[game.id as Exclude<GameId, 'racing'>];
+  const GameComponent = GAME_COMPONENTS[game.id as Exclude<GameId, EmbeddedGameId>];
 
   function handleFinish(res: { passed: boolean; stars: 0 | 1 | 2 | 3; score: number }) {
     recordStageCompletion(game!.id, { stage, ...res });

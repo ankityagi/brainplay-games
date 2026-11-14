@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Boundary Bash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap">
+<style>
+/* Layout: full-screen canvas drawn from behind the batter's stumps, glass HUD panels in the corners, menu screens over the live ground. */
+:root {
+  --night: #0f2236;
+  --glass: rgba(12, 30, 48, 0.74);
+  --glass-edge: rgba(255, 255, 255, 0.16);
+  --text: #ffffff;
+  --muted: #c6d8e8;
+  --sun: #ffd23f;
+  --berry: #ff5c6c;
+  --leaf: #4cd07d;
+  --sky: #5ab0ff;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night); color: var(--text); font-family: var(--body); }
+#view { position: fixed; inset: 0; display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
+button { font: inherit; color: inherit; }
+button:focus-visible, .card:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+.panel { background: var(--glass); border: 1px solid var(--glass-edge); border-radius: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.lbl { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); font-weight: 800; }
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; pointer-events: none; font-variant-numeric: tabular-nums; }
+.hud-tl { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); padding: 10px 16px; display: grid; gap: 2px; min-width: 140px; }
+.hud-tr { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); padding: 10px 14px; display: grid; gap: 6px; justify-items: end; }
+.big { font-family: var(--display); font-size: 40px; line-height: 1; }
+.big .w { font-size: 26px; color: var(--muted); }
+#hOvers { font-family: var(--display); font-size: 20px; }
+#hOvers .of { font-size: 14px; color: var(--muted); }
+.small { font-size: 12px; color: var(--muted); font-weight: 800; }
+#chips { display: flex; gap: 5px; }
+#chips i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-family: var(--display); font-size: 14px; background: rgba(255,255,255,0.1); color: var(--muted); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25); }
+#chips i.r { background: #f3f6fa; color: #1b2b3a; }
+#chips i.f { background: var(--leaf); color: #06321a; }
+#chips i.s { background: var(--sun); color: #3a2400; box-shadow: 0 0 12px rgba(255,210,63,0.7); }
+#chips i.o { background: var(--berry); color: #fff; }
+#pill { position: absolute; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); padding: 8px 16px; text-align: center; white-space: nowrap; }
+#pill .who { font-weight: 900; font-size: 14px; }
+#pill .what { font-family: var(--display); font-size: 18px; color: var(--sun); min-height: 22px; }
+#banner { position: absolute; left: 0; right: 0; top: 22%; text-align: center; font-family: var(--display); font-size: clamp(44px, 11vw, 104px); color: var(--sun); text-shadow: 0 5px 0 rgba(0,0,0,0.35), 0 0 30px rgba(0,0,0,0.25); opacity: 0; transform: scale(0.85); transition: opacity 0.18s, transform 0.18s; }
+#banner.show { opacity: 1; transform: scale(1); }
+#banner.warn { color: var(--berry); }
+#banner.cool { color: #fff; font-size: clamp(30px, 7vw, 60px); }
+#tip { position: absolute; left: 50%; top: calc(22% + clamp(56px, 13vw, 120px)); transform: translateX(-50%); padding: 6px 14px; font-weight: 900; font-size: 16px; white-space: nowrap; opacity: 0; transition: opacity 0.18s; }
+#tip.show { opacity: 1; }
+#meter { position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(360px, 80vw); padding: 8px 14px 10px; opacity: 0; transition: opacity 0.2s; }
+#meter.show { opacity: 1; }
+#meter .bar { position: relative; height: 14px; border-radius: 7px; margin: 6px 0 4px; background: linear-gradient(90deg, #ff5c6c 0%, #ffb35c 22%, #ffd23f 38%, #4cd07d 46%, #4cd07d 54%, #ffd23f 62%, #ffb35c 78%, #ff5c6c 100%); }
+#meter .mark { position: absolute; top: -5px; width: 6px; height: 24px; margin-left: -3px; border-radius: 3px; background: #fff; box-shadow: 0 0 0 2px rgba(0,0,0,0.45); transition: left 0.25s; }
+#meter .ends { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; letter-spacing: 0.1em; color: var(--muted); }
+#keysHint { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding: 8px 12px; font-size: 12px; font-weight: 800; color: var(--muted); max-width: 210px; line-height: 1.7; }
+kbd { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 5px; background: rgba(255,255,255,0.14); border-bottom: 2px solid rgba(0,0,0,0.35); color: var(--text); text-align: center; font-family: var(--body); font-weight: 900; font-size: 11px; }
+
+/* ---------- Screens ---------- */
+.screen { position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding-block: max(24px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); box-sizing: border-box; background: linear-gradient(180deg, rgba(15,34,54,0.2), rgba(15,34,54,0.6)); }
+.sheet { width: min(860px, 100%); padding: 26px 28px 28px; margin: auto 0; display: grid; gap: 20px; box-sizing: border-box; }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.brand h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(44px, 8vw, 72px); line-height: 0.95; color: var(--sun); text-shadow: 0 5px 0 #c4561b; letter-spacing: 0.01em; }
+.brand p { margin: 0; font-weight: 800; color: var(--muted); font-size: 15px; }
+.levels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.card { text-align: left; cursor: pointer; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--glass-edge); background: rgba(255,255,255,0.06); display: grid; gap: 3px; min-width: 0; transition: transform 0.12s, border-color 0.12s, background 0.12s; }
+.card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
+.card.sel { border-color: var(--sun); background: rgba(255, 210, 63, 0.16); }
+.card .nm { font-family: var(--display); font-size: 22px; }
+.card .meta { font-size: 13px; font-weight: 700; color: var(--muted); }
+.card .best { font-size: 12px; font-weight: 900; color: var(--sun); min-height: 16px; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.how div { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); font-size: 14px; font-weight: 700; color: var(--muted); line-height: 1.5; }
+.how b { color: var(--text); }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.btn { cursor: pointer; border: 0; border-radius: 999px; padding: 14px 28px; font-family: var(--display); font-size: 22px; background: var(--sun); color: #3a2400; box-shadow: 0 5px 0 #c98f00; transition: transform 0.1s, box-shadow 0.1s; }
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #c98f00; }
+.btn.ghost { background: rgba(255,255,255,0.12); color: var(--text); box-shadow: 0 5px 0 rgba(0,0,0,0.3); }
+.legend { font-size: 13px; font-weight: 800; color: var(--muted); }
+.center { text-align: center; justify-items: center; }
+.sheet.narrow { width: min(520px, 100%); }
+.result-score { font-family: var(--display); font-size: clamp(64px, 16vw, 110px); line-height: 1; color: var(--sun); text-shadow: 0 5px 0 #c4561b; }
+.result-sub { font-weight: 900; color: var(--muted); font-size: 16px; margin-top: -10px; }
+.stars { font-size: 44px; letter-spacing: 6px; color: rgba(255,255,255,0.18); }
+.stars b { color: var(--sun); font-weight: 400; text-shadow: 0 0 18px rgba(255, 210, 63, 0.6); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; width: 100%; }
+.stat { padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.07); }
+.stat .v { font-family: var(--display); font-size: 26px; font-variant-numeric: tabular-nums; }
+.newbest { color: var(--leaf); font-weight: 900; min-height: 20px; }
+
+/* ---------- Touch ---------- */
+#touch { position: fixed; inset: auto 0 0 0; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(86px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); pointer-events: none; }
+#touch .pad { display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 64px); gap: 8px; pointer-events: auto; }
+#touch button { border-radius: 50%; border: 2px solid var(--glass-edge); background: var(--glass); font-family: var(--display); font-size: 24px; touch-action: none; user-select: none; -webkit-user-select: none; }
+#touch button.on { background: rgba(255, 210, 63, 0.5); }
+#touch .up { grid-column: 2; grid-row: 1; }
+#touch .lf { grid-column: 1; grid-row: 2; }
+#touch .dn { grid-column: 2; grid-row: 2; }
+#touch .rt { grid-column: 3; grid-row: 2; }
+#touch .swing { pointer-events: auto; width: 120px; height: 120px; font-size: 26px; background: rgba(255, 210, 63, 0.35); }
+#touch .tbar { position: fixed; top: calc(76px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); display: flex; gap: 8px; pointer-events: auto; }
+#touch .tbar button { width: 44px; height: 44px; font-size: 16px; }
+
+@media (max-width: 720px) {
+  .levels { grid-template-columns: none; }
+  #keysHint { display: none; }
+  .sheet { padding: 20px 16px; }
+  .big { font-size: 32px; }
+  .hud-tl { padding: 8px 12px; min-width: 0; }
+  #pill { top: auto; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  #meter { bottom: calc(220px + env(safe-area-inset-bottom, 0px)); }
+  #chips i { width: 22px; height: 22px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #banner, .card, .btn, #meter .mark { transition: none; }
+}
+</style>
+
+<canvas id="view" tabindex="0" aria-label="Cricket batting view from behind the stumps"></canvas>
+
+<div id="hud" hidden>
+  <div class="hud-tl panel">
+    <div class="lbl">SCORE</div>
+    <div class="big" id="hScore">0<span class="w">/0</span></div>
+    <div id="hOvers">0.0 <span class="of">of 5 overs</span></div>
+    <div class="small">Best <span id="hBest">0</span></div>
+  </div>
+  <div class="hud-tr panel">
+    <div class="lbl">THIS OVER</div>
+    <div id="chips"></div>
+  </div>
+  <div id="pill" class="panel"><div class="who" id="pWho"></div><div class="what" id="pWhat"></div></div>
+  <div id="banner"></div>
+  <div id="tip" class="panel"></div>
+  <div id="meter" class="panel">
+    <div class="ends"><span>EARLY</span><span id="mWord">PERFECT</span><span>LATE</span></div>
+    <div class="bar"><div class="mark" id="mMark" style="left:50%"></div></div>
+  </div>
+  <div id="keysHint" class="panel">
+    <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> move<br>
+    <kbd>Space</kbd> swing the bat<br>
+    <kbd>P</kbd> pause &nbsp;<kbd>M</kbd> sound
+  </div>
+</div>
+
+<div id="menu" class="screen">
+  <div class="sheet panel">
+    <div class="brand">
+      <h1>Boundary Bash</h1>
+      <p>Cricket batting · 5 overs · time your shot for a six!</p>
+    </div>
+    <div class="levels" id="levels"></div>
+    <div class="how">
+      <div><b>Move</b> with the arrow keys (or W A S D). Left and right line you up with the ball. Up steps toward the bowler, down steps back.</div>
+      <div><b>Swing</b> with Space just as the ball reaches your bat. Watch where it bounces. Spinners turn after the bounce!</div>
+      <div><b>Score</b>: perfect timing is a <b>6</b>. A bit off is a 4, 2 or 1. Miss a straight one and you could be bowled.</div>
+    </div>
+    <div class="actions">
+      <span class="legend" id="soundLbl">Sound on · press M to change</span>
+      <button class="btn" id="startBtn">Start batting</button>
+    </div>
+  </div>
+</div>
+
+<div id="pause" class="screen" hidden>
+  <div class="sheet panel narrow center">
+    <div class="brand" style="justify-content:center"><h1>Paused</h1></div>
+    <div class="actions" style="justify-content:center">
+      <button class="btn" id="resumeBtn">Keep batting</button>
+      <button class="btn ghost" id="quitBtn">Back to menu</button>
+    </div>
+  </div>
+</div>
+
+<div id="over" class="screen" hidden>
+  <div class="sheet panel narrow center">
+    <div class="lbl" id="oLevel">ROOKIE · 5 OVERS</div>
+    <div class="result-score" id="oScore">0</div>
+    <div class="result-sub" id="oSub">runs</div>
+    <div class="stars" id="oStars"></div>
+    <div class="newbest" id="oBest"></div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">SIXES</div><div class="v" id="oSix">0</div></div>
+      <div class="stat"><div class="lbl">FOURS</div><div class="v" id="oFour">0</div></div>
+      <div class="stat"><div class="lbl">OUT</div><div class="v" id="oWk">0</div></div>
+      <div class="stat"><div class="lbl">BEST</div><div class="v" id="oTop">0</div></div>
+    </div>
+    <div class="actions" style="justify-content:center">
+      <button class="btn" id="againBtn">Bat again</button>
+      <button class="btn ghost" id="menuBtn">Change level</button>
+    </div>
+  </div>
+</div>
+
+<div id="touch" hidden>
+  <div class="pad">
+    <button class="up" data-key="up" aria-label="Step forward">▲</button>
+    <button class="lf" data-key="left" aria-label="Move left">◀</button>
+    <button class="dn" data-key="down" aria-label="Step back">▼</button>
+    <button class="rt" data-key="right" aria-label="Move right">▶</button>
+  </div>
+  <button class="swing" id="tSwing" aria-label="Swing the bat">SWING</button>
+  <div class="tbar"><button id="tPause" aria-label="Pause">II</button></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ======================= Game data =======================
+const DEG = Math.PI / 180;
+const G = 9.81;
+const BALL_R = 0.036;
+const STEP = 1 / 240;
+const OVERS = 5;
+const PER_OVER = 6;
+const SWEET = 0.12;        // seconds from pressing swing to the bat's sweet spot passing the ball
+const SWING_DUR = 0.3;
+const LATE_MAX = 0.2;      // latest a swing can be (sweet moment after the ball) and still hit
+const EARLY_MAX = 0.26;
+const CONTACT_AHEAD = 0.35; // the bat meets the ball this far in front of the batter's feet
+const BAT_SIDE = 0.32;      // bat sits this far to the off side of the batter's body
+const GUARD = { x: -0.25, z: 0.95 };
+const FIELD = { x: 0, z: 10.06 };
+const ROPE_R = 64;
+const STAR_RUNS = [30, 60, 100];
+
+const LEVELS = {
+  rookie: { name: 'Rookie', blurb: 'Slower balls and a bigger sweet spot', speed: 0.78, window: 1.35, move: 0.6 },
+  pro:    { name: 'Pro', blurb: 'Quicker balls that swing and turn', speed: 0.92, window: 1.0, move: 0.85 },
+  legend: { name: 'Legend', blurb: 'Fast, tricky and only perfect is six', speed: 1.06, window: 0.8, move: 1.1 },
+};
+const BOWLERS = [
+  { name: 'Speedy Sam', style: 'pace', shirt: '#ff6b5c', pants: '#f4f1e6', skin: '#8d5a3b', cap: '#1f3c8f' },
+  { name: 'Twisty Tia', style: 'spin', shirt: '#33c4a0', pants: '#f4f1e6', skin: '#f0c08a', cap: '#7a3fb0' },
+];
+// Each delivery: base speed (m/s), where it pitches (metres from the batter's stumps),
+// line it is aimed at (x at the stumps), swing in the air (m/s² sideways), turn off the pitch (m/s sideways) and bounce.
+const DELIVERY = {
+  straight: { label: 'Straight one', speed: 23, len: [4.5, 7], line: [-0.15, 0.15] },
+  fast:     { label: 'Quick one!', speed: 27, len: [4.5, 7], line: [-0.2, 0.2] },
+  outswing: { label: 'Swinging away', speed: 23, len: [4, 6.5], line: [-0.3, 0.05], swing: 1.3, turn: 0.25 },
+  inswing:  { label: 'Swinging in', speed: 23, len: [4, 6.5], line: [-0.05, 0.3], swing: -1.3, turn: -0.25 },
+  short:    { label: 'Short ball', speed: 24, len: [8, 9.5], line: [-0.2, 0.2], e: 0.6 },
+  bouncer:  { label: 'Bouncer!', speed: 25, len: [10.5, 12], line: [-0.3, 0.1], e: 0.66 },
+  yorker:   { label: 'Yorker!', speed: 25, len: [1.1, 1.9], line: [-0.1, 0.1] },
+  slower:   { label: 'Sneaky slow one', speed: 16, len: [4.5, 6.5], line: [-0.15, 0.15] },
+  offspin:  { label: 'Off spin', speed: 16, len: [3.5, 5.5], line: [0.25, 0.5], turn: -1.8, e: 0.45, spin: true },
+  legspin:  { label: 'Leg spin', speed: 15.5, len: [3.5, 5.5], line: [-0.45, -0.2], turn: 1.8, e: 0.45, spin: true },
+  bigturn:  { label: 'Big turner!', speed: 15, len: [3.5, 5], line: [0.25, 0.5], turn: 2.6, e: 0.45, spin: true },
+  floater:  { label: 'Floaty one', speed: 13, len: [3, 4.5], line: [-0.15, 0.15], swing: 0.6, relY: 2.4, e: 0.45, spin: true },
+};
+const OVER_PLAN = [
+  { bowler: 0, mix: ['straight', 'straight', 'outswing', 'straight', 'inswing', 'slower'] },
+  { bowler: 1, mix: ['offspin', 'offspin', 'legspin', 'floater', 'offspin', 'legspin'] },
+  { bowler: 0, mix: ['outswing', 'inswing', 'short', 'straight', 'yorker', 'fast'] },
+  { bowler: 1, mix: ['legspin', 'offspin', 'bigturn', 'floater', 'legspin', 'bigturn'] },
+  { bowler: 0, mix: ['yorker', 'bouncer', 'outswing', 'fast', 'inswing', 'slower'] },
+];
+const FIELDERS = [
+  { x: 12, z: 31 }, { x: -12, z: 31 }, { x: 27, z: 17 }, { x: -27, z: 17 },
+  { x: 25, z: 57 }, { x: -25, z: 57 }, { x: 0, z: 62 }, { x: 34, z: 40 },
+];
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const shuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const $ = (id) => document.getElementById(id);
+
+// ======================= Save =======================
+const Save = {
+  key: 'boundaryBash.v1',
+  data: { level: 'rookie', best: { rookie: 0, pro: 0, legend: 0 }, muted: false },
+  load() { try { const raw = localStorage.getItem(this.key); if (raw) { const d = JSON.parse(raw); Object.assign(this.data, d); this.data.best = Object.assign({ rookie: 0, pro: 0, legend: 0 }, d.best); } } catch (e) { /* storage unavailable */ } },
+  store() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) { /* storage unavailable */ } },
+};
+Save.load();
+if (!LEVELS[Save.data.level]) Save.data.level = 'rookie';
+
+// ======================= Sound =======================
+const Sound = {
+  ctx: null,
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    try { const AC = window.AudioContext || window.webkitAudioContext; if (AC) this.ctx = new AC(); } catch (e) { this.ctx = null; }
+  },
+  ok() { return this.ctx && !Save.data.muted; },
+  tone(freq, dur, type, vol, slideTo) {
+    if (!this.ok()) return;
+    const c = this.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+  },
+  noise(dur, vol, freq, q, rise) {
+    if (!this.ok()) return;
+    const c = this.ctx, t = c.currentTime, n = Math.floor(c.sampleRate * dur);
+    const buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+    const g = c.createGain();
+    if (rise) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + rise); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+    else { g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+    src.connect(f).connect(g).connect(c.destination); src.start(t);
+  },
+  bat(q) { this.tone(900 + q * 300, 0.09, 'triangle', 0.35); this.noise(0.08, 0.5, 2200, 1.5); },
+  bounce() { this.tone(140, 0.08, 'sine', 0.25, 70); },
+  swish() { this.noise(0.18, 0.12, 900, 0.8, 0.05); },
+  stumps() { this.tone(520, 0.12, 'square', 0.12, 260); this.noise(0.25, 0.4, 1400, 2); },
+  cheer(big) { this.noise(big ? 2.2 : 1.4, big ? 0.35 : 0.22, 1000, 0.4, 0.25); },
+  aww() { this.tone(330, 0.5, 'sine', 0.12, 200); },
+};
+
+// ======================= Canvas & camera =======================
+const canvas = $('view');
+const ctx = canvas.getContext('2d');
+const layer = document.createElement('canvas');
+const lctx = layer.getContext('2d');
+let W = 800, H = 600, DPR = 1;
+const CAM_TILT = 0.13;
+const cam = { x: 0, y: 2.5, z: -5.4, tilt: CAM_TILT, yaw: 0, F: 800, cx: 400, cy: 300, ct: 1, st: 0, cy2: 1, sy2: 0 };
+function aimCamera() { cam.ct = Math.cos(cam.tilt); cam.st = Math.sin(cam.tilt); cam.cy2 = Math.cos(cam.yaw); cam.sy2 = Math.sin(cam.yaw); }
+
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(320, window.innerWidth || 800);
+  H = Math.max(320, window.innerHeight || 600);
+  for (const c of [canvas, layer]) { c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); }
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  // Narrow screens need a wider view so the bowler and the batter both fit.
+  const portrait = H > W;
+  cam.F = Math.min(H / (2 * Math.tan(17 * DEG)), W / (2 * Math.tan((portrait ? 18 : 32) * DEG)));
+  cam.cx = W / 2; cam.cy = H * (portrait ? 0.46 : 0.5);
+  aimCamera();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// World: x to the right (off side), y up, z from the batter's stumps toward the bowler.
+function P(x, y, z) {
+  const rx = x - cam.x, dy = y - cam.y, rz = z - cam.z;
+  const dx = rx * cam.cy2 - rz * cam.sy2, dz = rx * cam.sy2 + rz * cam.cy2;
+  const yy = dy * cam.ct + dz * cam.st;
+  const zz = dz * cam.ct - dy * cam.st;
+  if (zz < 0.12) return null;
+  const s = cam.F / zz;
+  return { x: cam.cx + dx * s, y: cam.cy - yy * s, s, d: zz };
+}
+function quad(c, pts, fill) {
+  const q = [];
+  for (const p of pts) { const r = P(p[0], p[1], p[2]); if (!r) return false; q.push(r); }
+  c.beginPath(); c.moveTo(q[0].x, q[0].y);
+  for (let i = 1; i < q.length; i++) c.lineTo(q[i].x, q[i].y);
+  c.closePath(); c.fillStyle = fill; c.fill();
+  return true;
+}
+function groundLine(c, x1, z1, x2, z2, w, color) {
+  const dx = x2 - x1, dz = z2 - z1, L = Math.hypot(dx, dz) || 1, nx = -dz / L * w / 2, nz = dx / L * w / 2;
+  quad(c, [[x1 + nx, 0.002, z1 + nz], [x2 + nx, 0.002, z2 + nz], [x2 - nx, 0.002, z2 - nz], [x1 - nx, 0.002, z1 - nz]], color);
+}
+const ringPt = (R, a, y) => [FIELD.x + R * Math.sin(a), y, FIELD.z + R * Math.cos(a)];
+
+// ======================= Scenery (built once) =======================
+const crowd = [];
+const CROWD_COLORS = ['#ff5c6c', '#ffd23f', '#5ab0ff', '#4cd07d', '#ffffff', '#ff9f43', '#b57bff', '#ff7ac6', '#2e86de'];
+for (let i = 0; i < 1100; i++) {
+  const upper = Math.random() < 0.45;
+  const t = Math.random();
+  crowd.push({
+    a: rand(-98, 98) * DEG,
+    R: upper ? lerp(85.5, 95.5, t) : lerp(71.5, 83, t),
+    y: upper ? lerp(14.2, 25.5, t) + 0.4 : lerp(1.4, 11.6, t) + 0.4,
+    c: CROWD_COLORS[i % CROWD_COLORS.length], ph: Math.random() * 6.28,
+  });
+}
+const clouds = Array.from({ length: 6 }, (_, i) => ({ x: (i / 6) + Math.random() * 0.1, y: rand(0.05, 0.22), w: rand(0.12, 0.22), sp: rand(0.002, 0.006) }));
+const BOARD_COLORS = ['#ff5c6c', '#1f3c8f', '#ffd23f', '#16a085', '#ff9f43', '#7a3fb0'];
+
+// ======================= Game state =======================
+const game = {
+  phase: 'menu', paused: false, level: Save.data.level, T: 0, timer: 0, after: null,
+  runs: 0, wkts: 0, balls: 0, sixes: 0, fours: 0, dots: 0, chips: [],
+  plan: null, bowler: BOWLERS[0], delivKey: 'straight',
+  batter: { x: GUARD.x, z: GUARD.z, swingT: null, idle: 0 },
+  bowl: { x: 0.7, z: 31, state: 'mark', t: 0, legPh: 0, arm: 0 },
+  ball: null, crossing: null, pending: null,
+  fielders: FIELDERS.map((f) => ({ hx: f.x, hz: f.z, x: f.x, z: f.z, chase: false, legPh: 0 })),
+  fx: { dust: [], mark: null, confetti: [], cheer: 0, stumps: 0, bails: [], flash: 0 },
+};
+const keys = { left: false, right: false, up: false, down: false };
+
+function startInnings() {
+  Object.assign(game, { runs: 0, wkts: 0, balls: 0, sixes: 0, fours: 0, dots: 0, chips: [], paused: false, ball: null, crossing: null, pending: null });
+  game.plan = OVER_PLAN.map((o) => ({ bowler: o.bowler, queue: shuffle(o.mix) }));
+  game.fx.stumps = 0; game.fx.bails = []; game.fx.mark = null; game.fx.confetti = [];
+  game.level = Save.data.level;
+  showScreen(null);
+  $('hud').hidden = false;
+  if (isTouch) $('touch').hidden = false;
+  hideMeter();
+  renderChips(); updateScore();
+  const first = BOWLERS[game.plan[0].bowler];
+  banner('Over 1', 'cool', 1.4);
+  tip(first.name + ' to bowl', 1.4);
+  game.phase = 'between'; game.timer = 1.5; game.after = prepareBall;
+  canvas.focus();
+}
+
+function prepareBall() {
+  const over = Math.floor(game.balls / PER_OVER);
+  const plan = game.plan[over];
+  game.bowler = BOWLERS[plan.bowler];
+  game.delivKey = plan.queue[game.balls % PER_OVER];
+  const bt = game.batter; bt.x = GUARD.x; bt.z = GUARD.z; bt.swingT = null;
+  const pace = game.bowler.style === 'pace';
+  game.bowl = { x: 0.75, z: pace ? 31 : 24.5, state: 'mark', t: 0, legPh: 0, arm: 0 };
+  game.ball = null; game.crossing = null; game.pending = null;
+  game.fx.stumps = 0; game.fx.bails = []; game.fx.mark = null;
+  for (const f of game.fielders) f.chase = false;
+  setPill(game.bowler.name + ' · ball ' + (game.balls % PER_OVER + 1) + ' of 6', '');
+  game.phase = 'runup';
+}
+
+function release() {
+  const d = DELIVERY[game.delivKey], L = LEVELS[game.level];
+  const spd = d.speed * L.speed * rand(0.97, 1.03);
+  const rel = { x: game.bowl.x - 0.4, y: d.relY || (d.spin ? 2.05 : 2.2), z: 18.7 };
+  const len = rand(d.len[0], d.len[1]);
+  // d.line is where the ball would pass the stumps if it went straight on; work back to where it pitches.
+  let aim = rand(d.line[0], d.line[1]);
+  let turn = (d.turn || 0);
+  if (game.delivKey === 'bigturn' && Math.random() < 0.5) { turn = -turn; aim = -aim - 0.1; }
+  const line = rel.x + (aim - rel.x) * (rel.z - len) / rel.z;
+  turn = turn * L.move + (d.spin ? 0 : rand(-0.25, 0.25) * L.move);
+  const swing = (d.swing || 0) * L.move;
+  const T = (rel.z - len) / spd;
+  game.ball = {
+    p: { x: rel.x, y: rel.y, z: rel.z },
+    v: { x: (line - rel.x - 0.5 * swing * T * T) / T, y: (BALL_R - rel.y + 0.5 * G * T * T) / T, z: -spd },
+    swing, turn, e: d.e || 0.5, bounced: 0, t: 0, trail: [], rot: 0, rotRate: d.spin ? 26 : 14,
+    crossed: false, hit: false, runs: 0, kind: null, past: false, flightT: 0, grounded: false, crossedRope: false,
+  };
+  setPill(game.bowler.name + ' · ball ' + (game.balls % PER_OVER + 1) + ' of 6', d.label);
+  game.phase = 'live';
+}
+
+function swing() {
+  const bt = game.batter;
+  if (bt.swingT != null) return;
+  if (game.phase !== 'live' && game.phase !== 'runup') return;
+  if (game.phase === 'runup' && game.bowl.state !== 'gather') return; // no swinging before the ball is on its way
+  bt.swingT = game.T;
+  Sound.swish();
+  if (game.phase === 'live' && game.crossing && !game.ball.hit) judge(game.crossing);
+}
+
+// Decide what the swing did to the ball as it passed the bat.
+function judge(cr) {
+  const bt = game.batter, b = game.ball, L = LEVELS[game.level];
+  game.crossing = null;
+  if (bt.swingT == null) return;
+  const dt = bt.swingT + SWEET - cr.t;          // < 0 early, > 0 late
+  const reach = cr.x - (bt.x + BAT_SIDE);       // > 0 ball is to the right of the bat
+  showMeter(dt, L.window);
+  if (dt < -EARLY_MAX || dt > LATE_MAX) { b.missNote = dt < 0 ? 'Way too early!' : 'Way too late!'; return; }
+  if (Math.abs(reach) > 0.62 || cr.y > 1.85 || cr.y < 0) {
+    b.missNote = cr.y > 1.85 ? 'Too high to reach' : reach > 0 ? 'Missed! Move right ▶' : 'Missed! Move left ◀';
+    return;
+  }
+  const errT = Math.abs(dt) / (0.04 * L.window);
+  const errX = Math.max(0, Math.abs(reach) - 0.08) / (0.17 * L.window);
+  const err = Math.hypot(errT, errX);
+  const runs = err < 1 ? 6 : err < 1.9 ? 4 : err < 2.8 ? 2 : err < 3.8 ? 1 : 0;
+  let note;
+  if (runs === 6) note = 'Perfect timing!';
+  else if (errX > errT && errX > 1) note = reach > 0 ? 'Get closer: move right ▶' : 'Get closer: move left ◀';
+  else note = Math.abs(dt) < 0.07 * L.window ? (dt < 0 ? 'A little early' : 'A little late') : (dt < 0 ? 'Too early' : 'Too late');
+  hitBall(runs, dt, reach, cr, note, err);
+}
+
+function hitBall(runs, dt, reach, cr, note, err) {
+  const b = game.ball;
+  b.hit = true; b.runs = runs; b.note = note;
+  b.p = { x: cr.x, y: Math.max(BALL_R, cr.y), z: cr.z };
+  let ang = clamp(dt * 480 + reach * 35, -62, 62) * DEG;
+  const spec = { 6: [33, 34], 4: [29, 3], 2: [19, 9], 1: [12, 8], 0: [7, 22] }[runs];
+  if (runs === 0) ang = (reach >= 0 ? 1 : -1) * rand(115, 150) * DEG; // edged behind
+  const v = spec[0] * rand(0.96, 1.04), el = spec[1] * DEG;
+  const h = v * Math.cos(el);
+  b.v = { x: h * Math.sin(ang), y: v * Math.sin(el), z: h * Math.cos(ang) };
+  b.flightT = 0; b.bounced = 2; b.grounded = false; b.trail = [];
+  game.phase = 'flying';
+  Sound.bat(runs >= 4 ? 1 : runs > 0 ? 0.5 : 0);
+  game.fx.flash = runs === 6 ? 0.25 : 0.12;
+  tip(note, 2.2);
+  if (runs === 1 || runs === 2) {
+    // The nearest fielder runs for it.
+    const stop = predictStop(b);
+    let best = null, bd = 1e9;
+    for (const f of game.fielders) { const dd = Math.hypot(f.x - stop.x, f.z - stop.z); if (dd < bd) { bd = dd; best = f; } }
+    if (best) { best.chase = true; best.tx = stop.x; best.tz = stop.z; }
+  }
+}
+
+function predictStop(b) {
+  const sim = { p: { ...b.p }, v: { ...b.v } };
+  for (let i = 0; i < 2400; i++) { if (stepHitBall(sim, 1 / 120)) break; }
+  return sim.p;
+}
+
+// Ball after the bat: flies, bounces, then rolls and slows on the grass. Returns true once stopped.
+function stepHitBall(b, dt) {
+  b.v.y -= G * dt;
+  b.p.x += b.v.x * dt; b.p.y += b.v.y * dt; b.p.z += b.v.z * dt;
+  if (b.p.y <= BALL_R) {
+    b.p.y = BALL_R;
+    if (b.v.y < -1.5) { b.v.y = -b.v.y * 0.35; b.v.x *= 0.72; b.v.z *= 0.72; }
+    else {
+      b.v.y = 0; b.grounded = true;
+      const sp = Math.hypot(b.v.x, b.v.z);
+      const ns = Math.max(0, sp - 4 * dt);
+      if (sp > 0) { b.v.x *= ns / sp; b.v.z *= ns / sp; }
+      if (ns < 0.25) return true;
+    }
+  }
+  return false;
+}
+
+function stepDelivery(b, dt) {
+  if (!b.bounced) b.v.x += b.swing * dt;
+  b.v.y -= G * dt;
+  b.p.x += b.v.x * dt; b.p.y += b.v.y * dt; b.p.z += b.v.z * dt;
+  if (b.p.y <= BALL_R && b.v.y < 0) {
+    b.p.y = BALL_R;
+    if (!b.bounced) {
+      b.v.y = -b.v.y * b.e; b.v.z *= 0.9; b.v.x = b.v.x * 0.85 + b.turn; b.bounced = 1;
+      game.fx.mark = { x: b.p.x, z: b.p.z, t: 0 };
+      for (let i = 0; i < 12; i++) game.fx.dust.push({ x: b.p.x, y: 0.03, z: b.p.z, vx: rand(-0.6, 0.6), vy: rand(0.3, 1.1), vz: rand(-0.8, 0.4), t: 0, life: rand(0.35, 0.6) });
+      Sound.bounce();
+    } else { b.v.y = -b.v.y * 0.4; b.v.z *= 0.8; b.v.x *= 0.8; }
+  }
+}
+
+function resolve(kind, runs) {
+  if (game.phase === 'result' || game.phase === 'done') return;
+  const b = game.ball;
+  game.balls += 1;
+  game.runs += runs;
+  let chip = { t: '•', c: '' };
+  if (kind === 'bowled') {
+    game.wkts += 1; chip = { t: 'W', c: 'o' };
+    banner('BOWLED!', 'warn', 1.6); tip('Keep your bat in line with the stumps', 2); Sound.aww();
+  } else if (runs === 6) {
+    game.sixes += 1; chip = { t: '6', c: 's' };
+    banner('SIX!', '', 1.6); Sound.cheer(true); game.fx.cheer = 2.6; confetti();
+  } else if (runs === 4) {
+    game.fours += 1; chip = { t: '4', c: 'f' };
+    banner('FOUR!', '', 1.4); Sound.cheer(false); game.fx.cheer = 1.6;
+  } else if (runs > 0) {
+    chip = { t: String(runs), c: 'r' };
+    banner(runs === 1 ? '1 run' : runs + ' runs', 'cool', 1.2);
+  } else {
+    game.dots += 1;
+    banner(kind === 'edge' ? 'Edged it!' : 'No run', 'cool', 1.1);
+    if (kind === 'left') tip(b && b.missNote ? b.missNote : 'Left alone', 1.8);
+    else if (b && b.missNote) tip(b.missNote, 1.8);
+  }
+  game.chips.push(chip);
+  renderChips(); updateScore();
+  game.phase = 'result';
+  game.timer = runs === 6 ? 2.2 : 1.7;
+  game.after = afterBall;
+}
+
+function afterBall() {
+  if (game.balls >= OVERS * PER_OVER) { finishInnings(); return; }
+  if (game.balls % PER_OVER === 0) {
+    const over = game.balls / PER_OVER;
+    const next = BOWLERS[game.plan[over].bowler];
+    banner('End of over ' + over, 'cool', 1.6);
+    tip('Next: ' + next.name + (next.style === 'spin' ? ' bowls spin. Watch the turn!' : ' bowls fast. Get ready!'), 1.8);
+    game.chips = []; renderChips();
+    game.phase = 'between'; game.timer = 2; game.after = prepareBall;
+    return;
+  }
+  prepareBall();
+}
+
+function finishInnings() {
+  game.phase = 'done';
+  const lv = game.level;
+  const prev = Save.data.best[lv] || 0;
+  const isBest = game.runs > prev;
+  if (isBest) { Save.data.best[lv] = game.runs; Save.store(); }
+  $('oLevel').textContent = LEVELS[lv].name.toUpperCase() + ' · 5 OVERS';
+  $('oScore').textContent = game.runs;
+  $('oSub').textContent = game.runs === 1 ? 'run' : 'runs' + (game.wkts ? ', out ' + game.wkts + (game.wkts === 1 ? ' time' : ' times') : ', never out!');
+  const stars = STAR_RUNS.filter((r) => game.runs >= r).length;
+  $('oStars').innerHTML = '<b>' + '★'.repeat(stars) + '</b>' + '★'.repeat(3 - stars);
+  $('oBest').textContent = isBest && game.runs > 0 ? 'New best score!' : (stars < 3 ? 'Next star at ' + STAR_RUNS[stars] + ' runs' : 'Superstar batting!');
+  $('oSix').textContent = game.sixes; $('oFour').textContent = game.fours; $('oWk').textContent = game.wkts;
+  $('oTop').textContent = Save.data.best[lv];
+  setTimeout(() => { if (game.phase === 'done') { $('touch').hidden = true; showScreen('over'); $('againBtn').focus(); } }, 1200);
+}
+
+// ======================= Update =======================
+function update(dt) {
+  game.T += dt;
+  const bt = game.batter;
+  // Batter footwork
+  const mx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), mz = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
+  if (game.phase === 'runup' || game.phase === 'live') {
+    bt.x = clamp(bt.x + mx * 2.6 * dt, -1.35, 1.0);
+    bt.z = clamp(bt.z + mz * 2.0 * dt, 0.45, 2.3);
+  }
+  bt.idle += dt;
+
+  if (game.phase === 'between' || game.phase === 'result') {
+    game.timer -= dt;
+    if (game.phase === 'result') stepAfterglow(dt);
+    if (game.timer <= 0 && game.after) { const f = game.after; game.after = null; f(); }
+  }
+  if (game.phase === 'runup' || game.phase === 'live' || game.phase === 'flying' || game.phase === 'result') stepBowler(dt);
+
+  if (game.phase === 'live') {
+    const b = game.ball;
+    const prev = { x: b.p.x, y: b.p.y, z: b.p.z };
+    stepDelivery(b, dt);
+    b.t += dt; b.rot += b.rotRate * dt;
+    const zc = bt.z + CONTACT_AHEAD;
+    if (!b.crossed && prev.z > zc && b.p.z <= zc) {
+      const f = (prev.z - zc) / (prev.z - b.p.z);
+      const cr = { x: lerp(prev.x, b.p.x, f), y: lerp(prev.y, b.p.y, f), z: zc, t: game.T - dt * (1 - f) };
+      b.crossed = true;
+      if (bt.swingT != null) judge(cr); else game.crossing = cr;
+    }
+    // A late swing can still catch the ball for a moment after it passes the bat.
+    if (game.phase === 'live' && game.crossing && game.T > game.crossing.t + (LATE_MAX - SWEET)) game.crossing = null;
+    if (game.phase === 'live' && !b.past && prev.z > 0 && b.p.z <= 0) {
+      b.past = true;
+      const f = prev.z / (prev.z - b.p.z), x0 = lerp(prev.x, b.p.x, f), y0 = lerp(prev.y, b.p.y, f);
+      if (Math.abs(x0) < 0.13 && y0 < 0.73) { knockStumps(b); resolve('bowled', 0); return; }
+    }
+    if (game.phase === 'live' && b.p.z < -2.2) resolve(bt.swingT == null ? 'left' : 'miss', 0);
+  } else if (game.phase === 'flying') {
+    const b = game.ball;
+    b.flightT += dt; b.rot += 30 * dt;
+    const stopped = stepHitBall(b, dt);
+    const dist = Math.hypot(b.p.x - FIELD.x, b.p.z - FIELD.z);
+    if (b.runs >= 4 && !b.crossedRope && dist > ROPE_R) { b.crossedRope = true; resolve(b.runs === 6 ? 'six' : 'four', b.runs); }
+    else if (b.runs <= 2) {
+      const f = game.fielders.find((q) => q.chase);
+      const caught = f && Math.hypot(f.x - b.p.x, f.z - b.p.z) < 1.2 && b.p.y < 1.5;
+      if (caught || stopped || b.flightT > 3.4) resolve(b.runs === 0 ? 'edge' : 'runs', b.runs);
+    } else if (b.flightT > 4.2) resolve(b.runs === 6 ? 'six' : 'four', b.runs);
+  }
+  stepFielders(dt);
+  stepFx(dt);
+  stepCamera(dt);
+  if (game.ball && (game.phase === 'live' || game.phase === 'flying')) {
+    const tr = game.ball.trail; tr.push({ x: game.ball.p.x, y: game.ball.p.y, z: game.ball.p.z }); if (tr.length > 9) tr.shift();
+  }
+}
+
+// The camera stays behind the stumps but turns to follow a hit ball, then settles back for the next ball.
+function stepCamera(dt) {
+  let tt = CAM_TILT, ty = 0, rate = 2.5;
+  const b = game.ball;
+  if (b && b.hit && !b.gone && (game.phase === 'flying' || game.phase === 'result')) {
+    const dx = b.p.x - cam.x, dz = b.p.z - cam.z, hd = Math.hypot(dx, dz);
+    ty = clamp(Math.atan2(dx, dz) * 0.8, -0.75, 0.75);
+    tt = clamp(-Math.atan2(b.p.y - cam.y, hd) + 0.12, -0.75, CAM_TILT);
+    rate = 5;
+  }
+  const k = Math.min(1, dt * rate);
+  cam.tilt += (tt - cam.tilt) * k; cam.yaw += (ty - cam.yaw) * k;
+  aimCamera();
+}
+
+// After a boundary the ball keeps flying into the crowd while the banner shows.
+function stepAfterglow(dt) {
+  const b = game.ball;
+  if (!b || !b.hit) return;
+  const dist = Math.hypot(b.p.x - FIELD.x, b.p.z - FIELD.z);
+  if (dist < 78 && b.p.y > -1) { stepHitBall(b, dt); b.rot += 30 * dt; } else b.gone = true;
+  if (dist > ROPE_R + 1 && b.p.y <= BALL_R + 0.01) b.gone = true;
+}
+
+function stepBowler(dt) {
+  const bw = game.bowl, pace = game.bowler.style === 'pace';
+  bw.t += dt;
+  if (bw.state === 'mark') { if (game.phase === 'runup' && bw.t > 0.55) { bw.state = 'run'; bw.t = 0; } }
+  else if (bw.state === 'run') {
+    bw.z -= (pace ? 7.2 : 4.6) * dt; bw.legPh += dt * (pace ? 13 : 10);
+    if (bw.z <= (pace ? 20.6 : 20.3)) { bw.state = 'gather'; bw.t = 0; }
+  } else if (bw.state === 'gather') {
+    const dur = pace ? 0.34 : 0.4;
+    bw.z -= (pace ? 3.5 : 2.2) * dt;
+    bw.arm = (bw.t / dur) * Math.PI;
+    if (bw.t >= dur) { bw.arm = Math.PI; bw.state = 'follow'; bw.t = 0; release(); }
+  } else if (bw.state === 'follow') {
+    const k = Math.min(1, bw.t / 0.9);
+    bw.arm = Math.PI + Math.min(1, bw.t / 0.3) * Math.PI;
+    bw.z -= (pace ? 4 : 2.4) * (1 - k) * dt;
+    bw.x += 1.4 * (1 - k) * dt;
+    bw.legPh += dt * 9 * (1 - k);
+  }
+}
+
+function stepFielders(dt) {
+  for (const f of game.fielders) {
+    let tx = f.hx, tz = f.hz, sp = 2.2;
+    if (f.chase && game.ball && (game.phase === 'flying' || game.phase === 'result')) { tx = game.ball.p.x; tz = game.ball.p.z; sp = 7; }
+    const dx = tx - f.x, dz = tz - f.z, d = Math.hypot(dx, dz);
+    if (d > 0.3) { const m = Math.min(d, sp * dt); f.x += dx / d * m; f.z += dz / d * m; f.legPh += dt * (sp > 3 ? 14 : 8); f.moving = true; }
+    else f.moving = false;
+  }
+}
+
+function knockStumps(b) {
+  game.fx.stumps = 0.001;
+  game.fx.bails = [-1, 1].map((s) => ({ x: s * 0.055, y: 0.72, z: 0, vx: s * rand(0.8, 1.6) + b.v.x * 0.1, vy: rand(2.5, 3.6), vz: rand(-1.8, -0.8), r: 0 }));
+  Sound.stumps();
+}
+
+function stepFx(dt) {
+  const fx = game.fx;
+  fx.dust = fx.dust.filter((p) => { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.vy -= 1.5 * dt; return p.t < p.life; });
+  if (fx.mark) fx.mark.t += dt;
+  fx.confetti = fx.confetti.filter((c) => { c.t += dt; c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 260 * dt; c.r += c.vr * dt; return c.y < H + 20 && c.t < 3.5; });
+  if (fx.cheer > 0) fx.cheer -= dt;
+  if (fx.flash > 0) fx.flash -= dt;
+  if (fx.stumps > 0) fx.stumps = Math.min(1, fx.stumps + dt * 5);
+  for (const bl of fx.bails) { bl.vy -= G * dt; bl.x += bl.vx * dt; bl.y += bl.vy * dt; bl.z += bl.vz * dt; bl.r += 14 * dt; if (bl.y < 0.01) { bl.y = 0.01; bl.vy = Math.abs(bl.vy) * 0.3; bl.vx *= 0.6; bl.vz *= 0.6; } }
+}
+
+function confetti() {
+  const cols = ['#ffd23f', '#ff5c6c', '#4cd07d', '#5ab0ff', '#ffffff', '#ff9f43'];
+  for (let i = 0; i < 110; i++) game.fx.confetti.push({ x: rand(0, W), y: rand(-H * 0.3, -10), vx: rand(-60, 60), vy: rand(40, 160), r: rand(0, 6), vr: rand(-8, 8), c: cols[i % cols.length], s: rand(5, 10), t: 0 });
+}
+
+// ======================= Drawing =======================
+function draw() {
+  const c = ctx;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawSky(c);
+  drawStands(c);
+  drawField(c);
+  drawPitch(c);
+
+  // Everyone in the middle, farthest first.
+  const people = [];
+  for (const f of game.fielders) people.push({ d: depth(f.x, f.z), fn: () => drawFielder(c, f) });
+  people.push({ d: depth(-0.95, 22.6), fn: () => drawUmpire(c) });
+  people.push({ d: depth(-1.5, 19.4), fn: () => drawNonStriker(c) });
+  people.push({ d: depth(game.bowl.x, game.bowl.z), fn: () => drawBowler(c) });
+  people.push({ d: depth(0, 20.12), fn: () => drawStumps(c, 20.12, 0) });
+  people.sort((a, b) => b.d - a.d);
+  for (const p of people) p.fn();
+
+  drawDust(c);
+  drawBallShadow(c);
+  const ball = game.ball;
+  const ballFar = ball && !ball.gone && ball.p.z > 6;
+  if (ballFar) drawBall(c);
+
+  // The batter is drawn see-through so the ball stays visible as it comes on.
+  lctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  lctx.clearRect(0, 0, W, H);
+  drawBatter(lctx);
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 0.48; c.drawImage(layer, 0, 0); c.restore();
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawStumps(c, 0, game.fx.stumps);
+  drawBails(c);
+  if (ball && !ball.gone && !ballFar) drawBall(c);
+
+  if (game.fx.flash > 0) { c.fillStyle = 'rgba(255,255,255,' + (game.fx.flash * 1.2).toFixed(3) + ')'; c.fillRect(0, 0, W, H); }
+  for (const cf of game.fx.confetti) { c.save(); c.translate(cf.x, cf.y); c.rotate(cf.r); c.fillStyle = cf.c; c.fillRect(-cf.s / 2, -cf.s / 4, cf.s, cf.s / 2); c.restore(); }
+}
+function depth(x, z) { const p = P(x, 0, z); return p ? p.d : -1; }
+
+function drawSky(c) {
+  const hz = cam.cy - cam.F * cam.st / cam.ct;
+  const g = c.createLinearGradient(0, 0, 0, Math.max(10, hz));
+  g.addColorStop(0, '#3d8fe0'); g.addColorStop(1, '#bfe3ff');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  for (const cl of clouds) {
+    const x = ((cl.x + game.T * cl.sp) % 1.3 - 0.15) * W, y = cl.y * hz, w = cl.w * W;
+    c.beginPath(); c.ellipse(x, y, w * 0.5, w * 0.13, 0, 0, Math.PI * 2); c.ellipse(x - w * 0.18, y - w * 0.07, w * 0.22, w * 0.12, 0, 0, Math.PI * 2); c.ellipse(x + w * 0.14, y - w * 0.09, w * 0.2, w * 0.13, 0, 0, Math.PI * 2); c.fill();
+  }
+  // Light towers on either side
+  for (const s of [-1, 1]) {
+    const base = P(s * 78, 0, 70), top = P(s * 78, 46, 70);
+    if (!base || !top) continue;
+    c.strokeStyle = '#6b7b8c'; c.lineWidth = Math.max(2, 0.8 * top.s); c.beginPath(); c.moveTo(base.x, base.y); c.lineTo(top.x, top.y); c.stroke();
+    c.fillStyle = '#e8eef5'; const w = 9 * top.s, h = 4 * top.s; c.fillRect(top.x - w / 2, top.y - h, w, h);
+    c.fillStyle = '#fffbe0'; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) c.fillRect(top.x - w / 2 + (i + 0.2) * w / 4, top.y - h + (j + 0.2) * h / 2, w / 4 * 0.6, h / 2 * 0.6);
+  }
+  // Grass under the horizon
+  c.fillStyle = '#3e9b45'; c.fillRect(0, hz, W, H - hz);
+}
+
+function drawStands(c) {
+  const segs = [];
+  for (let a = -100; a < 100; a += 4) segs.push(a);
+  segs.sort((p, q) => Math.abs(p) - Math.abs(q));
+  for (const a0 of segs) {
+    const a = a0 * DEG, b = (a0 + 4.3) * DEG;
+    quad(c, [ringPt(70, a, 0), ringPt(70, b, 0), ringPt(84, b, 12.3), ringPt(84, a, 12.3)], (a0 / 4) % 2 ? '#2b4a6b' : '#2f5175');
+    quad(c, [ringPt(84, a, 12.3), ringPt(84, b, 12.3), ringPt(85, b, 13.6), ringPt(85, a, 13.6)], '#e7edf3');
+    quad(c, [ringPt(85, a, 13.6), ringPt(85, b, 13.6), ringPt(96.5, b, 26.4), ringPt(96.5, a, 26.4)], (a0 / 4) % 2 ? '#37557a' : '#3b5c83');
+    quad(c, [ringPt(96.5, a, 26.4), ringPt(96.5, b, 26.4), ringPt(97, b, 29), ringPt(97, a, 29)], '#c8d3de');
+  }
+  const cheer = game.fx.cheer > 0 ? Math.min(1, game.fx.cheer) : 0;
+  for (const m of crowd) {
+    const hop = cheer ? Math.max(0, Math.sin(game.T * 16 + m.ph)) * 0.7 * cheer : 0;
+    const p = P(FIELD.x + m.R * Math.sin(m.a), m.y + hop, FIELD.z + m.R * Math.cos(m.a));
+    if (!p || p.x < -10 || p.x > W + 10) continue;
+    const r = Math.max(1, 0.34 * p.s);
+    c.fillStyle = m.c; c.fillRect(p.x - r, p.y - r * 1.6, r * 2, r * 2.2);
+  }
+}
+
+function drawField(c) {
+  // Mowing stripes across the ground
+  for (let z = -3; z < 92; z += 5) quad(c, [[-95, 0, z], [95, 0, z], [95, 0, z + 2.5], [-95, 0, z + 2.5]], '#47a84e');
+  // Inner circle dots
+  c.fillStyle = 'rgba(255,255,255,0.75)';
+  for (let a = -180; a < 180; a += 5) {
+    const pt = ringPt(27, a * DEG, 0); const p = P(pt[0], 0, pt[2]);
+    if (p && p.d > 1) { const r = Math.max(1, 0.18 * p.s); c.beginPath(); c.ellipse(p.x, p.y, r, r * 0.35, 0, 0, Math.PI * 2); c.fill(); }
+  }
+  // Boundary rope and boards
+  for (let a0 = -96; a0 < 96; a0 += 3) {
+    const a = a0 * DEG, b = (a0 + 3.1) * DEG;
+    const ok = quad(c, [ringPt(ROPE_R + 3.5, a, 0), ringPt(ROPE_R + 3.5, b, 0), ringPt(ROPE_R + 3.5, b, 1.0), ringPt(ROPE_R + 3.5, a, 1.0)], BOARD_COLORS[((a0 + 96) / 3) % BOARD_COLORS.length]);
+    if (ok) quad(c, [ringPt(ROPE_R + 3.49, a, 0.42), ringPt(ROPE_R + 3.49, b, 0.42), ringPt(ROPE_R + 3.49, b, 0.58), ringPt(ROPE_R + 3.49, a, 0.58)], 'rgba(255,255,255,0.55)');
+    quad(c, [ringPt(ROPE_R, a, 0.01), ringPt(ROPE_R, b, 0.01), ringPt(ROPE_R + 0.35, b, 0.01), ringPt(ROPE_R + 0.35, a, 0.01)], '#f2f2f2');
+  }
+}
+
+function drawPitch(c) {
+  quad(c, [[-1.6, 0.001, -2], [1.6, 0.001, -2], [1.6, 0.001, 22.2], [-1.6, 0.001, 22.2]], '#d8bd84');
+  quad(c, [[-1.6, 0.0015, 2.5], [1.6, 0.0015, 2.5], [1.6, 0.0015, 17.6], [-1.6, 0.0015, 17.6]], '#dcc38e');
+  // Scuffed areas where bowlers land
+  for (const z of [1.5, 18.6]) quad(c, [[-0.8, 0.002, z - 1.2], [0.8, 0.002, z - 1.2], [0.8, 0.002, z + 1.2], [-0.8, 0.002, z + 1.2]], 'rgba(160,120,70,0.25)');
+  const white = 'rgba(255,255,255,0.92)';
+  for (const end of [0, 20.12]) {
+    const dir = end === 0 ? 1 : -1;
+    groundLine(c, -1.83, end + dir * 1.22, 1.83, end + dir * 1.22, 0.05, white); // popping crease
+    groundLine(c, -1.32, end, 1.32, end, 0.05, white);                         // bowling crease
+    for (const s of [-1, 1]) groundLine(c, s * 1.32, end - dir * 1.0, s * 1.32, end + dir * 1.22, 0.05, white); // return creases
+  }
+  // Where the ball pitched
+  const m = game.fx.mark;
+  if (m && m.t < 3) {
+    const p = P(m.x, 0.003, m.z);
+    if (p) { c.fillStyle = 'rgba(120,80,40,' + (0.55 * (1 - m.t / 3)).toFixed(3) + ')'; c.beginPath(); c.ellipse(p.x, p.y, 0.09 * p.s, 0.025 * p.s + 0.5, 0, 0, Math.PI * 2); c.fill(); }
+  }
+}
+
+function drawStumps(c, z, knock) {
+  const tilt = [-0.9, 0.25, 0.7];
+  [-0.097, 0, 0.097].forEach((x, i) => {
+    const base = P(x, 0, z); if (!base) return;
+    const k = knock * (z === 0 ? 1 : 0);
+    const len = 0.71;
+    const tx = x + Math.sin(tilt[i] * k) * len, ty = Math.cos(tilt[i] * k) * len, tz = z - k * 0.25 * len;
+    const top = P(tx, ty, tz); if (!top) return;
+    c.strokeStyle = '#f4e3b8'; c.lineCap = 'round'; c.lineWidth = Math.max(1.2, 0.036 * base.s);
+    c.beginPath(); c.moveTo(base.x, base.y); c.lineTo(top.x, top.y); c.stroke();
+    c.strokeStyle = 'rgba(120,80,40,0.5)'; c.lineWidth = Math.max(0.6, 0.012 * base.s); c.beginPath(); c.moveTo(base.x + 0.008 * base.s, base.y); c.lineTo(top.x + 0.008 * top.s, top.y); c.stroke();
+  });
+  if (!(knock > 0 && z === 0)) {
+    for (const s of [-1, 1]) {
+      const a = P(s * 0.005, 0.725, z), b = P(s * 0.105, 0.725, z);
+      if (a && b) { c.strokeStyle = '#f4e3b8'; c.lineWidth = Math.max(1, 0.025 * a.s); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); }
+    }
+  }
+}
+function drawBails(c) {
+  for (const bl of game.fx.bails) {
+    const p = P(bl.x, bl.y, bl.z); if (!p) continue;
+    c.save(); c.translate(p.x, p.y); c.rotate(bl.r); c.fillStyle = '#f4e3b8'; c.fillRect(-0.05 * p.s, -0.012 * p.s, 0.1 * p.s, 0.024 * p.s); c.restore();
+  }
+}
+
+// A cartoon person built in metres around their feet, then scaled to the screen.
+function person(c, x, z, o) {
+  const base = P(x, 0, z); if (!base) return null;
+  const s = base.s, X = (m) => base.x + m * s, Y = (m) => base.y - m * s;
+  const crouch = o.crouch || 0;
+  const hipY = 0.9 - crouch * 0.22, shY = 1.42 - crouch * 0.28, headY = 1.6 - crouch * 0.28;
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,0.18)'; c.beginPath(); c.ellipse(base.x, base.y, 0.38 * s, 0.07 * s, 0, 0, Math.PI * 2); c.fill();
+  for (const side of [-1, 1]) {
+    const lift = o.legPh != null ? Math.max(0, Math.sin(o.legPh + (side > 0 ? Math.PI : 0))) * 0.3 : 0;
+    const spread = 0.13 + crouch * 0.12;
+    const hx = side * 0.09, fx = side * spread, kx = side * (0.11 + crouch * 0.14);
+    const fy = lift, ky = hipY * 0.5 + lift * 0.6;
+    c.strokeStyle = o.pants; c.lineWidth = 0.13 * s;
+    c.beginPath(); c.moveTo(X(hx), Y(hipY)); c.lineTo(X(kx), Y(ky)); c.lineTo(X(fx), Y(fy + 0.04)); c.stroke();
+    if (o.pads) { c.strokeStyle = '#ffffff'; c.lineWidth = 0.17 * s; c.beginPath(); c.moveTo(X(kx), Y(ky + 0.12)); c.lineTo(X(fx), Y(fy + 0.08)); c.stroke(); }
+    c.fillStyle = '#2b2f36'; c.beginPath(); c.ellipse(X(fx), Y(fy + 0.03), 0.08 * s, 0.045 * s, 0, 0, Math.PI * 2); c.fill();
+  }
+  // torso
+  const tw = 0.42;
+  c.fillStyle = o.shirt;
+  roundRect(c, X(-tw / 2), Y(shY + 0.02), tw * s, (shY + 0.02 - hipY + 0.06) * s, 0.1 * s); c.fill();
+  if (o.number != null && o.back) { c.fillStyle = 'rgba(255,255,255,0.85)'; c.font = '900 ' + Math.max(6, 0.2 * s) + 'px Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(o.number), X(0), Y((shY + hipY) / 2 + 0.05)); }
+  // arms
+  const hands = [];
+  for (const [side, ang] of [[-1, o.armL || 0.15], [1, o.armR || 0.15]]) {
+    const sx = side * 0.2, sy = shY - 0.04;
+    let hx, hy;
+    if (o.hands && o.hands[side > 0 ? 1 : 0]) { [hx, hy] = o.hands[side > 0 ? 1 : 0]; }
+    else { hx = sx + side * Math.sin(ang) * 0.62; hy = sy - Math.cos(ang) * 0.62; }
+    const ex = (sx + hx) / 2 + side * 0.05, ey = (sy + hy) / 2;
+    c.strokeStyle = o.sleeve || o.shirt; c.lineWidth = 0.1 * s;
+    c.beginPath(); c.moveTo(X(sx), Y(sy)); c.lineTo(X(ex), Y(ey)); c.stroke();
+    c.strokeStyle = o.skin; c.lineWidth = 0.085 * s;
+    c.beginPath(); c.moveTo(X(ex), Y(ey)); c.lineTo(X(hx), Y(hy)); c.stroke();
+    c.fillStyle = o.glove || o.skin; c.beginPath(); c.arc(X(hx), Y(hy), 0.055 * s, 0, Math.PI * 2); c.fill();
+    hands.push({ x: X(hx), y: Y(hy) });
+  }
+  // head
+  const hr = 0.135;
+  c.fillStyle = o.skin; c.beginPath(); c.arc(X(0), Y(headY), hr * s, 0, Math.PI * 2); c.fill();
+  if (!o.back && s > 6) {
+    c.fillStyle = '#1b1b1b'; for (const e of [-1, 1]) { c.beginPath(); c.arc(X(e * 0.045), Y(headY + 0.01), Math.max(0.6, 0.018 * s), 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = '#7a3b2a'; c.lineWidth = Math.max(0.6, 0.012 * s); c.beginPath(); c.arc(X(0), Y(headY - 0.03), 0.045 * s, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
+  }
+  if (o.head === 'cap') {
+    c.fillStyle = o.cap; c.beginPath(); c.arc(X(0), Y(headY + 0.02), (hr + 0.005) * s, Math.PI, 0); c.fill();
+    if (!o.back) { c.beginPath(); c.ellipse(X(0), Y(headY + 0.03), 0.17 * s, 0.035 * s, 0, 0, Math.PI); c.fill(); }
+  } else if (o.head === 'hat') {
+    c.fillStyle = o.cap; c.beginPath(); c.ellipse(X(0), Y(headY + 0.06), 0.26 * s, 0.05 * s, 0, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(X(0), Y(headY + 0.06), (hr - 0.01) * s, Math.PI, 0); c.fill();
+  } else if (o.head === 'helmet') {
+    c.fillStyle = o.cap; c.beginPath(); c.arc(X(0), Y(headY + 0.01), (hr + 0.03) * s, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.25)'; c.beginPath(); c.arc(X(-0.04), Y(headY + 0.08), 0.05 * s, 0, Math.PI * 2); c.fill();
+    if (!o.back) { c.strokeStyle = '#c9ced6'; c.lineWidth = Math.max(0.6, 0.015 * s); for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(X(-0.1), Y(headY - 0.03 - i * 0.035)); c.lineTo(X(0.1), Y(headY - 0.03 - i * 0.035)); c.stroke(); } }
+  }
+  return { s, X, Y, hands, shY };
+}
+function roundRect(c, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+
+function drawFielder(c, f) {
+  const set = game.phase === 'live' || (game.phase === 'runup' && game.bowl.state !== 'mark' && game.bowl.state !== 'run') || (game.phase === 'runup' && game.bowl.z < 24);
+  person(c, f.x, f.z, { shirt: '#ffb238', pants: '#f4f1e6', skin: '#c98d5e', head: 'cap', cap: '#1f6f5c', crouch: set && !f.moving ? 1 : 0, legPh: f.moving ? f.legPh : null, armL: set ? 0.5 : 0.15, armR: set ? 0.5 : 0.15 });
+}
+function drawUmpire(c) {
+  person(c, -0.95, 22.6, { shirt: '#f7f7f2', pants: '#2c3440', skin: '#e0ac7e', head: 'hat', cap: '#f0f0ea', armL: 0.1, armR: 0.1 });
+}
+function drawNonStriker(c) {
+  const r = person(c, -1.5, 19.4, { shirt: '#3c8dde', pants: '#f4f1e6', skin: '#b97a50', head: 'helmet', cap: '#14285a', pads: true, glove: '#ffffff', armL: 0.25, armR: 0.35 });
+  if (r) batShape(c, r.hands[1].x, r.hands[1].y, r.s, 0.15);
+}
+function drawBowler(c) {
+  const bw = game.bowl, B = game.bowler;
+  const running = bw.state === 'run' || bw.state === 'follow';
+  let armR = 0.25, armL = 0.25;
+  if (bw.state === 'run') { armR = 0.3 + Math.sin(bw.legPh) * 0.5; armL = 0.3 - Math.sin(bw.legPh) * 0.5; }
+  if (bw.state === 'gather' || bw.state === 'follow') { armR = bw.arm; armL = bw.state === 'gather' ? Math.PI * 0.85 : 0.6; }
+  const r = person(c, bw.x, bw.z, { shirt: B.shirt, pants: B.pants, skin: B.skin, head: 'cap', cap: B.cap, legPh: running ? bw.legPh : null, armL, armR });
+  if (r && (bw.state === 'mark' || bw.state === 'run' || bw.state === 'gather')) {
+    const h = r.hands[1]; c.fillStyle = '#c4202f'; c.beginPath(); c.arc(h.x, h.y, Math.max(1.5, 0.045 * r.s), 0, Math.PI * 2); c.fill();
+  }
+}
+function batShape(c, hx, hy, s, phi) {
+  const dx = Math.sin(phi), dy = Math.cos(phi); // screen direction (y down)
+  const px = -dy, py = dx;
+  const pt = (along, across) => [hx + (dx * along + px * across) * s, hy + (dy * along + py * across) * s];
+  c.fillStyle = '#5b3a1e';
+  poly(c, [pt(-0.06, -0.02), pt(0.26, -0.02), pt(0.26, 0.02), pt(-0.06, 0.02)]);
+  c.fillStyle = '#e9c98b';
+  poly(c, [pt(0.25, -0.055), pt(0.84, -0.055), pt(0.86, 0), pt(0.84, 0.055), pt(0.25, 0.055)]);
+  c.fillStyle = 'rgba(150,100,50,0.35)';
+  poly(c, [pt(0.3, 0.0), pt(0.82, 0.0), pt(0.82, 0.05), pt(0.3, 0.05)]);
+}
+function poly(c, pts) { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); c.fill(); }
+
+function batAngle() {
+  const bt = game.batter;
+  if (bt.swingT != null) {
+    const u = (game.T - bt.swingT) / SWING_DUR;
+    const k = SWEET / SWING_DUR;
+    if (u < k) { const e = u / k; return lerp(155, 0, e * e) * DEG; }
+    if (u < 1) { const e = (u - k) / (1 - k); return lerp(0, -150, 1 - (1 - e) * (1 - e)) * DEG; }
+    return -150 * DEG;
+  }
+  if (game.phase === 'live') return 55 * DEG; // backlift, ready to play
+  return (14 + Math.max(0, Math.sin(bt.idle * 3)) * 10) * DEG; // tapping the bat
+}
+function drawBatter(c) {
+  const bt = game.batter;
+  const phi = batAngle();
+  const base = P(bt.x, 0, bt.z); if (!base) return;
+  const s = base.s;
+  // Hands move with the bat: the bat swings around a point in front of the chest.
+  const hx = 0.16 + Math.sin(phi) * 0.12, hy = 1.0 + (1 - Math.cos(phi)) * 0.18;
+  const r = person(c, bt.x, bt.z, { shirt: '#3c8dde', pants: '#f4f1e6', skin: '#b97a50', head: 'helmet', cap: '#14285a', pads: true, back: true, number: 7, glove: '#ffffff', crouch: 0.25, hands: [[hx - 0.05, hy + 0.03], [hx + 0.03, hy - 0.03]] });
+  if (!r) return;
+  batShape(c, base.x + hx * s, base.y - hy * s, s, phi);
+}
+
+function drawBallShadow(c) {
+  const b = game.ball; if (!b || b.gone) return;
+  const p = P(b.p.x, 0, b.p.z); if (!p) return;
+  const r = Math.max(2, BALL_R * 1.4 * p.s), a = clamp(0.45 - b.p.y * 0.12, 0.08, 0.45);
+  c.fillStyle = 'rgba(0,0,0,' + a.toFixed(3) + ')'; c.beginPath(); c.ellipse(p.x, p.y, r, r * 0.4, 0, 0, Math.PI * 2); c.fill();
+}
+function drawBall(c) {
+  const b = game.ball;
+  for (let i = 0; i < b.trail.length - 1; i++) {
+    const t = b.trail[i], p = P(t.x, t.y, t.z); if (!p) continue;
+    const r = Math.max(1.5, BALL_R * 1.2 * p.s) * (i / b.trail.length);
+    c.fillStyle = 'rgba(255,255,255,' + (0.25 * i / b.trail.length).toFixed(3) + ')'; c.beginPath(); c.arc(p.x, p.y, r, 0, Math.PI * 2); c.fill();
+  }
+  const p = P(b.p.x, b.p.y, b.p.z); if (!p) return;
+  const r = Math.max(4.2, BALL_R * 1.35 * p.s);
+  c.fillStyle = 'rgba(255,255,255,0.4)'; c.beginPath(); c.arc(p.x, p.y, r + 4, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.95)'; c.beginPath(); c.arc(p.x, p.y, r + 1.5, 0, Math.PI * 2); c.fill();
+  const g = c.createRadialGradient(p.x - r * 0.35, p.y - r * 0.35, r * 0.1, p.x, p.y, r);
+  g.addColorStop(0, '#ff6a6a'); g.addColorStop(1, '#a3111f');
+  c.fillStyle = g; c.beginPath(); c.arc(p.x, p.y, r, 0, Math.PI * 2); c.fill();
+  if (r > 3) { c.strokeStyle = 'rgba(255,240,220,0.9)'; c.lineWidth = Math.max(0.7, r * 0.16); c.beginPath(); c.ellipse(p.x, p.y, r * 0.95, r * 0.95 * Math.abs(Math.cos(b.rot)), 0.5, 0, Math.PI * 2); c.stroke(); }
+}
+function drawDust(c) {
+  for (const d of game.fx.dust) {
+    const p = P(d.x, d.y, d.z); if (!p) continue;
+    const k = d.t / d.life;
+    c.fillStyle = 'rgba(214,180,120,' + (0.6 * (1 - k)).toFixed(3) + ')';
+    c.beginPath(); c.arc(p.x, p.y, Math.max(1, (0.04 + k * 0.08) * p.s), 0, Math.PI * 2); c.fill();
+  }
+}
+
+// ======================= HUD & screens =======================
+let bannerTimer = 0, tipTimer = 0, meterTimer = 0;
+function banner(text, cls, dur) { const el = $('banner'); el.textContent = text; el.className = 'show ' + (cls || ''); bannerTimer = dur; }
+function tip(text, dur) { const el = $('tip'); el.textContent = text; el.classList.add('show'); tipTimer = dur; }
+function setPill(who, what) { $('pWho').textContent = who; $('pWhat').textContent = what; }
+function showMeter(dt, win) {
+  const span = 0.2 * win;
+  $('mMark').style.left = (50 + clamp(dt / span, -1, 1) * 48).toFixed(1) + '%';
+  const perfect = Math.abs(dt) < 0.04 * win;
+  $('mWord').textContent = perfect ? 'PERFECT!' : dt < 0 ? 'EARLY' : 'LATE';
+  $('meter').classList.add('show'); meterTimer = 2.6;
+}
+function hideMeter() { $('meter').classList.remove('show'); meterTimer = 0; }
+function renderChips() {
+  const el = $('chips'); el.innerHTML = '';
+  for (let i = 0; i < PER_OVER; i++) { const ch = game.chips[i]; const n = document.createElement('i'); if (ch) { n.textContent = ch.t; if (ch.c) n.className = ch.c; } el.appendChild(n); }
+}
+function updateScore() {
+  $('hScore').innerHTML = game.runs + '<span class="w">/' + game.wkts + '</span>';
+  $('hOvers').innerHTML = Math.floor(game.balls / PER_OVER) + '.' + (game.balls % PER_OVER) + ' <span class="of">of 5 overs</span>';
+  $('hBest').textContent = Save.data.best[game.level] || 0;
+}
+function hudTick(dt) {
+  if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').classList.remove('show'); }
+  if (tipTimer > 0) { tipTimer -= dt; if (tipTimer <= 0) $('tip').classList.remove('show'); }
+  if (meterTimer > 0) { meterTimer -= dt; if (meterTimer <= 0) hideMeter(); }
+}
+function showScreen(id) { for (const s of ['menu', 'pause', 'over']) $(s).hidden = s !== id; }
+
+function buildMenu() {
+  const el = $('levels'); el.innerHTML = '';
+  for (const [id, L] of Object.entries(LEVELS)) {
+    const b = document.createElement('button');
+    b.className = 'card' + (Save.data.level === id ? ' sel' : '');
+    b.innerHTML = '<span class="nm"></span><span class="meta"></span><span class="best"></span>';
+    b.querySelector('.nm').textContent = L.name;
+    b.querySelector('.meta').textContent = L.blurb;
+    const best = Save.data.best[id] || 0;
+    b.querySelector('.best').textContent = best ? 'Best: ' + best + ' runs' : '';
+    b.addEventListener('click', () => { Save.data.level = id; Save.store(); buildMenu(); $('startBtn').focus(); });
+    el.appendChild(b);
+  }
+  $('soundLbl').textContent = (Save.data.muted ? 'Sound off' : 'Sound on') + ' · press M to change';
+}
+function toMenu() {
+  game.phase = 'menu'; game.paused = false; game.ball = null;
+  $('hud').hidden = true; $('touch').hidden = true;
+  buildMenu(); showScreen('menu'); $('startBtn').focus();
+}
+function setPaused(p) {
+  if (game.phase === 'menu' || game.phase === 'done') return;
+  game.paused = p; showScreen(p ? 'pause' : null);
+  if (p) $('resumeBtn').focus(); else canvas.focus();
+}
+
+// ======================= Input =======================
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down' };
+window.addEventListener('keydown', (e) => {
+  Sound.init();
+  const k = KEYMAP[e.code];
+  if (k) { keys[k] = true; e.preventDefault(); return; }
+  if (e.code === 'Space' || e.code === 'Enter') {
+    if (game.phase === 'menu' || game.phase === 'done' || game.paused) {
+      if (e.code === 'Space' && document.activeElement && document.activeElement.tagName === 'BUTTON') return; // let buttons click
+      if (e.code === 'Enter') return;
+      e.preventDefault();
+      if (game.phase === 'menu') startInnings();
+      return;
+    }
+    e.preventDefault(); if (!e.repeat) swing(); return;
+  }
+  if (e.code === 'KeyP' || e.code === 'Escape') { setPaused(!game.paused); e.preventDefault(); return; }
+  if (e.code === 'KeyM') { Save.data.muted = !Save.data.muted; Save.store(); if (game.phase === 'menu') buildMenu(); }
+});
+window.addEventListener('keyup', (e) => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+document.addEventListener('visibilitychange', () => { if (document.hidden && !game.paused && game.phase !== 'menu' && game.phase !== 'done') setPaused(true); });
+canvas.addEventListener('pointerdown', () => { Sound.init(); canvas.focus(); if (!isTouch && game.phase !== 'menu') swing(); });
+
+const isTouch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+for (const btn of document.querySelectorAll('#touch [data-key]')) {
+  const k = btn.dataset.key;
+  const on = (e) => { e.preventDefault(); Sound.init(); keys[k] = true; btn.classList.add('on'); };
+  const off = (e) => { e.preventDefault(); keys[k] = false; btn.classList.remove('on'); };
+  btn.addEventListener('pointerdown', on); btn.addEventListener('pointerup', off); btn.addEventListener('pointercancel', off); btn.addEventListener('pointerleave', off);
+}
+$('tSwing').addEventListener('pointerdown', (e) => { e.preventDefault(); Sound.init(); swing(); });
+$('tPause').addEventListener('click', () => setPaused(true));
+$('startBtn').addEventListener('click', () => { Sound.init(); startInnings(); });
+$('resumeBtn').addEventListener('click', () => setPaused(false));
+$('quitBtn').addEventListener('click', toMenu);
+$('againBtn').addEventListener('click', () => { Sound.init(); startInnings(); });
+$('menuBtn').addEventListener('click', toMenu);
+
+// ======================= Main loop =======================
+let last = 0, acc = 0;
+function frame(ts) {
+  const dt = last ? Math.min(0.05, (ts - last) / 1000) : 0;
+  last = ts;
+  if (!game.paused) {
+    acc += dt;
+    while (acc >= STEP) { update(STEP); acc -= STEP; }
+    hudTick(dt);
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+buildMenu();
+$('startBtn').focus();
+requestAnimationFrame(frame);
+
+// Small hook for automated checks.
+window.__boundaryBash = { game, keys, swing, startInnings, update, draw, LEVELS, DELIVERY, SWEET, CONTACT_AHEAD, BAT_SIDE };
+})();
+</script>
+</html>

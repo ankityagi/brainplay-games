@@ -1,8 +1,8 @@
 import { ComponentType, LazyExoticComponent, lazy } from 'react';
-import { GameComponentProps, GameId } from './types';
+import { EmbeddedGameId, GameComponentProps, GameId } from './types';
 
 // Embedded standalone games (GameMeta.embedSrc) have no stage component.
-export const GAME_COMPONENTS: Record<Exclude<GameId, 'racing'>, LazyExoticComponent<ComponentType<GameComponentProps>>> = {
+export const GAME_COMPONENTS: Record<Exclude<GameId, EmbeddedGameId>, LazyExoticComponent<ComponentType<GameComponentProps>>> = {
   math: lazy(() => import('../games/math/MathGame')),
   geography: lazy(() => import('../games/geography/GeographyGame')),
   map: lazy(() => import('../games/map/MapGame')),

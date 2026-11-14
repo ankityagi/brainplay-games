@@ -11,10 +11,11 @@ export type GameId =
   | 'roboshooter'
   | 'sudoku'
   | 'racing'
-  | 'cricket';
+  | 'cricket'
+  | 'dinoduel';
 
 /** Games that ship as their own static page (GameMeta.embedSrc) instead of a stage component. */
-export type EmbeddedGameId = 'racing' | 'cricket';
+export type EmbeddedGameId = 'racing' | 'cricket' | 'dinoduel';
 
 export type GameCategory = 'learn' | 'play';
 

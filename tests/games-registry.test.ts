@@ -42,3 +42,25 @@ describe('Boundary Bash cricket page', () => {
     expect(html).toContain('const PER_OVER = 6;');
   });
 });
+
+describe('Dino Duel fighting page', () => {
+  const html = readFileSync(resolve(__dirname, '../public/dino-duel/index.html'), 'utf8');
+
+  it('is listed as the dinosaur fighting game and opens its own page', () => {
+    const game = GAMES.find((g) => g.id === 'dinoduel');
+    expect(game?.embedSrc).toBe('/dino-duel/index.html');
+    expect(game?.category).toBe('play');
+  });
+
+  it('loads no outside scripts', () => {
+    expect(html).not.toMatch(/<script[^>]+src=/);
+  });
+
+  it('has the five dinosaurs, best of 3 rounds and 10 levels', () => {
+    for (const name of ['T-Rex', 'Spinosaurus', 'Ankylosaurus', 'Triceratops', 'Velociraptor']) {
+      expect(html).toContain(`name: '${name}'`);
+    }
+    expect(html).toContain('ROUNDS_TO_WIN = 2');
+    expect(html).toContain('LEVEL_COUNT = 10');
+  });
+});

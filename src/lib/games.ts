@@ -109,6 +109,16 @@ export const GAMES: GameMeta[] = [
     embedSrc: '/cricket/index.html',
     levelsLabel: '3 levels',
   },
+  {
+    id: 'dinoduel',
+    title: 'Dino Duel',
+    tagline: 'Pick a dinosaur and battle, 1 or 2 players',
+    emoji: '🦕',
+    category: 'play',
+    accent: 'from-orange-400 to-purple-600',
+    embedSrc: '/dino-duel/index.html',
+    levelsLabel: '10 levels',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

@@ -48,11 +48,11 @@ button:focus-visible, .card:focus-visible { outline: 3px solid var(--sun); outli
 #pill { position: absolute; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); padding: 8px 16px; text-align: center; white-space: nowrap; }
 #pill .who { font-weight: 900; font-size: 14px; }
 #pill .what { font-family: var(--display); font-size: 18px; color: var(--sun); min-height: 22px; }
-#banner { position: absolute; left: 0; right: 0; top: 22%; text-align: center; font-family: var(--display); font-size: clamp(44px, 11vw, 104px); color: var(--sun); text-shadow: 0 5px 0 rgba(0,0,0,0.35), 0 0 30px rgba(0,0,0,0.25); opacity: 0; transform: scale(0.85); transition: opacity 0.18s, transform 0.18s; }
+#banner { position: absolute; left: 0; right: 0; top: 13%; text-align: center; font-family: var(--display); font-size: clamp(44px, 11vw, 104px); color: var(--sun); text-shadow: 0 5px 0 rgba(0,0,0,0.35), 0 0 30px rgba(0,0,0,0.25); opacity: 0; transform: scale(0.85); transition: opacity 0.18s, transform 0.18s; }
 #banner.show { opacity: 1; transform: scale(1); }
 #banner.warn { color: var(--berry); }
 #banner.cool { color: #fff; font-size: clamp(30px, 7vw, 60px); }
-#tip { position: absolute; left: 50%; top: calc(22% + clamp(56px, 13vw, 120px)); transform: translateX(-50%); padding: 6px 14px; font-weight: 900; font-size: 16px; white-space: nowrap; opacity: 0; transition: opacity 0.18s; }
+#tip { position: absolute; left: 50%; top: calc(13% + clamp(56px, 13vw, 120px)); transform: translateX(-50%); padding: 6px 14px; font-weight: 900; font-size: 16px; white-space: nowrap; opacity: 0; transition: opacity 0.18s; }
 #tip.show { opacity: 1; }
 #meter { position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(360px, 80vw); padding: 8px 14px 10px; opacity: 0; transition: opacity 0.2s; }
 #meter.show { opacity: 1; }
@@ -407,7 +407,7 @@ function startInnings() {
   $('hud').hidden = false;
   if (isTouch) $('touch').hidden = false;
   hideMeter();
-  renderChips(); updateScore();
+  renderChips(); updateScore(); setPill('', '');
   const first = BOWLERS[game.plan[0].bowler];
   banner('Over 1', 'cool', 1.4);
   tip(first.name + ' to bowl', 1.4);
@@ -1053,7 +1053,7 @@ function drawDust(c) {
 let bannerTimer = 0, tipTimer = 0, meterTimer = 0;
 function banner(text, cls, dur) { const el = $('banner'); el.textContent = text; el.className = 'show ' + (cls || ''); bannerTimer = dur; }
 function tip(text, dur) { const el = $('tip'); el.textContent = text; el.classList.add('show'); tipTimer = dur; }
-function setPill(who, what) { $('pWho').textContent = who; $('pWhat').textContent = what; }
+function setPill(who, what) { $('pWho').textContent = who; $('pWhat').textContent = what; $('pill').hidden = !who; }
 function showMeter(dt, win) {
   const span = 0.2 * win;
   $('mMark').style.left = (50 + clamp(dt / span, -1, 1) * 48).toFixed(1) + '%';

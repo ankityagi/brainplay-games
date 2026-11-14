@@ -97,7 +97,7 @@ export const GAMES: GameMeta[] = [
     category: 'play',
     accent: 'from-yellow-400 to-pink-500',
     embedSrc: '/zoom-valley/index.html',
-    levelsLabel: '2 levels',
+    levelsLabel: '4 levels',
   },
   {
     id: 'cricket',

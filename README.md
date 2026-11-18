@@ -14,6 +14,26 @@ progressively harder; progress is saved per-browser in `localStorage`.
 | ♟️ Chess Puzzles | Play | Find the checkmate in one move (every puzzle is programmatically verified with chess.js) |
 | 🐍 Snake | Play | The arcade classic — faster speed, bigger board, more obstacles each stage |
 
+## Coin gate and play time
+
+Play games need play time; Learn games are always free. Kids earn coins from stars on their
+learning sites (Viraj's Math Quest, Vihaan's Quest) and trade them there for a 6-character
+code, which they type into BrainPlay (home page, or the screen a Play game shows when time runs
+out). A good code adds its minutes to this device's play time, which counts down only while a
+Play game is on screen. Each code works once, and only on the day it was made.
+
+- `src/lib/playcode.ts`: code check, a copy of the learning sites' `js/playcode.js`
+  (format documented at the top of the file).
+- `src/lib/playgate.ts`: gate state in localStorage (on/off, play time left, parent unlock,
+  PIN hash, codes used).
+- **Parent page** at `#/parent` (link at the bottom of the home page): PIN set on first visit;
+  turn the gate on or off, unlock everything for 30 minutes to 4 hours, add or clear play time,
+  see codes used.
+- **Offline:** `public/sw.js` saves the whole site on first visit (file list in
+  `precache.json`, written at build time by the plugin in `vite.config.ts`), so games, codes
+  and the parent page all work with no internet, e.g. on a flight. Open the site once while
+  online first.
+
 ## Stack
 
 React + TypeScript + Vite + Tailwind CSS + React Router. No backend, no

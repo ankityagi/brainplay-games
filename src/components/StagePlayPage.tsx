@@ -7,6 +7,7 @@ import { GAME_COMPONENTS } from '../lib/registry';
 import GameShell from './GameShell';
 import ResultModal from './ResultModal';
 import NotFound from './NotFound';
+import PlayGate from './PlayGate';
 
 export default function StagePlayPage() {
   const { gameId, stage: stageParam } = useParams<{ gameId: string; stage: string }>();
@@ -44,8 +45,9 @@ export default function StagePlayPage() {
     navigate(`/${game!.id}/stage/${nextStage}`);
   }
 
-  return (
-    <GameShell game={game} stage={stage}>
+  const gated = game.category === 'play';
+  const play = (
+    <>
       <div className="flex-1 min-h-0 flex flex-col">
         <Suspense
           fallback={
@@ -66,6 +68,12 @@ export default function StagePlayPage() {
           onStageSelect={() => navigate(`/${game.id}`)}
         />
       )}
+    </>
+  );
+
+  return (
+    <GameShell game={game} stage={stage}>
+      {gated ? <PlayGate>{play}</PlayGate> : play}
     </GameShell>
   );
 }

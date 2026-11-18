@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ReactNode } from 'react';
 import { GameMeta } from '../lib/types';
+import TimeLeft from './TimeLeft';
 
 interface GameShellProps {
   game: GameMeta;
@@ -27,11 +28,14 @@ export default function GameShell({ game, stage, totalStages = 10, children }: G
             <span className="font-semibold">{game.title}</span>
           </Link>
         </div>
-        {stage ? (
-          <div className="text-sm font-medium text-slate-300 bg-slate-800 rounded-full px-3 py-1">
-            Stage {stage} / {totalStages}
-          </div>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {game.category === 'play' && <TimeLeft />}
+          {stage ? (
+            <div className="text-sm font-medium text-slate-300 bg-slate-800 rounded-full px-3 py-1">
+              Stage {stage} / {totalStages}
+            </div>
+          ) : null}
+        </div>
       </header>
       <main className="flex-1 min-h-0 flex flex-col overflow-y-auto">{children}</main>
     </div>

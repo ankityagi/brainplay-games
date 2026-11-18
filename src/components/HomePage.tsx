@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { GAMES } from '../lib/games';
 import { totalStarsEarned } from '../lib/progress';
 import { GameCategory } from '../lib/types';
+import PlayTimeBar from './PlayTimeBar';
 
 function GameGrid({ category }: { category: GameCategory }) {
   const games = GAMES.filter((g) => g.category === category);
@@ -40,6 +41,7 @@ export default function HomePage() {
           {GAMES.length} free games. No sign-up. Every game gets trickier as you climb.
         </p>
       </div>
+      <PlayTimeBar />
       <section>
         <h2 className="text-base font-semibold uppercase tracking-wider text-slate-500 mb-4">Learn</h2>
         <GameGrid category="learn" />
@@ -48,7 +50,12 @@ export default function HomePage() {
         <h2 className="text-base font-semibold uppercase tracking-wider text-slate-500 mb-4">Play</h2>
         <GameGrid category="play" />
       </section>
-      <p className="text-center text-sm text-slate-600">Progress is saved in this browser only.</p>
+      <p className="text-center text-sm text-slate-600">
+        Progress is saved in this browser only. ·{' '}
+        <Link to="/parent" className="hover:text-slate-400">
+          Parent
+        </Link>
+      </p>
     </div>
   );
 }

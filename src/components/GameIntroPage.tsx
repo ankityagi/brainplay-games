@@ -7,6 +7,7 @@ import GameShell from './GameShell';
 import StageSelect from './StageSelect';
 import NotFound from './NotFound';
 import EmbeddedGame from './EmbeddedGame';
+import PlayGate from './PlayGate';
 
 export default function GameIntroPage() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -19,7 +20,9 @@ export default function GameIntroPage() {
   if (game.embedSrc) {
     return (
       <GameShell game={game}>
-        <EmbeddedGame title={game.title} src={game.embedSrc} />
+        <PlayGate>
+          <EmbeddedGame title={game.title} src={game.embedSrc} />
+        </PlayGate>
       </GameShell>
     );
   }

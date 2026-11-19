@@ -6,7 +6,7 @@ import CodeEntry from './CodeEntry';
 
 const LEARN_SITES = [
   { name: "Viraj's Math Quest", href: 'https://viraj.ankityagi.online/#coins' },
-  { name: "Vihaan's Quest", href: 'https://vihaan.ankityagi.online/' },
+  { name: "Vihaan's Quest", href: 'https://vihaan.ankityagi.online/#coins' },
 ];
 
 /**

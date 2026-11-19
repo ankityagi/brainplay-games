@@ -129,6 +129,16 @@ export const GAMES: GameMeta[] = [
     embedSrc: '/dino-trucks/index.html',
     levelsLabel: '6 levels',
   },
+  {
+    id: 'jellyjam',
+    title: 'Jelly Jam',
+    tagline: 'Stack falling jelly shapes and pop full rows',
+    emoji: '🍬',
+    category: 'play',
+    accent: 'from-pink-400 to-violet-600',
+    embedSrc: '/jelly-jam/index.html',
+    levelsLabel: '10 levels',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

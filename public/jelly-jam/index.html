@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jelly Jam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap">
+<style>
+/* Jelly Jam: wobbly jelly shapes fall into a jar; fill a row to pop it. One canvas draws the jar and the HUD; menus are glass panels over it. */
+:root {
+  --night: #2a1747;
+  --glass: rgba(40, 22, 72, 0.8);
+  --glass-edge: rgba(255, 255, 255, 0.18);
+  --text: #ffffff;
+  --muted: #e2d6ff;
+  --candy: #ff5fa2;
+  --lemon: #ffd93b;
+  --mint: #4fdc8a;
+  --sky: #3ec6ff;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night); color: var(--text); font-family: var(--body); -webkit-user-select: none; user-select: none; }
+#view { position: fixed; inset: 0; display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
+button { font: inherit; color: inherit; }
+button:focus-visible { outline: 3px solid var(--lemon); outline-offset: 3px; }
+.panel { background: var(--glass); border: 1px solid var(--glass-edge); border-radius: 18px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+.screen { position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding-block: max(18px, env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-bottom, 0px)); padding-inline: 14px; box-sizing: border-box; background: linear-gradient(180deg, rgba(42,23,71,0.35), rgba(42,23,71,0.7)); }
+.sheet { width: min(860px, 100%); padding: 22px 24px 24px; margin: auto 0; display: grid; gap: 16px; box-sizing: border-box; }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.brand h1, h2.title { margin: 0; font-family: var(--display); font-weight: 400; line-height: 0.95; color: var(--lemon); text-shadow: 0 5px 0 #d6457f; letter-spacing: 0.01em; }
+.brand h1 { font-size: clamp(46px, 9vw, 78px); }
+h2.title { font-size: clamp(30px, 6vw, 46px); text-align: center; }
+.brand p, .sub { margin: 0; font-weight: 800; color: var(--muted); font-size: 15px; }
+.sub.center { text-align: center; }
+.levels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.lvl { cursor: pointer; border-radius: 14px; border: 2px solid var(--glass-edge); background: rgba(255,255,255,0.07); padding: 10px 8px 9px; display: grid; gap: 2px; justify-items: center; transition: transform 0.12s, border-color 0.12s; }
+.lvl:hover:not(:disabled) { transform: translateY(-2px); border-color: rgba(255,255,255,0.5); }
+.lvl:disabled { cursor: default; opacity: 0.45; }
+.lvl .n { font-family: var(--display); font-size: 30px; line-height: 1; }
+.lvl .st { font-size: 15px; letter-spacing: 1px; color: rgba(255,255,255,0.25); }
+.lvl .st b { color: var(--lemon); font-weight: 400; }
+.lvl .nw { font-size: 11px; font-weight: 900; color: var(--muted); min-height: 14px; text-align: center; }
+.lvl.cur { border-color: var(--lemon); background: rgba(255,217,59,0.14); }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.how div { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.07); font-size: 14px; font-weight: 700; color: var(--muted); line-height: 1.6; }
+.how b { color: var(--text); }
+kbd { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 5px; background: rgba(255,255,255,0.16); border-bottom: 2px solid rgba(0,0,0,0.35); color: var(--text); text-align: center; font-family: var(--body); font-weight: 900; font-size: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.row.center { justify-content: center; }
+.btn { cursor: pointer; border: 0; border-radius: 999px; padding: 12px 22px; font-family: var(--display); font-size: 20px; background: rgba(255,255,255,0.14); box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25); }
+.btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
+.btn.go { background: var(--lemon); color: #4a2400; }
+.btn.go:hover:not(:disabled) { background: #ffe57a; }
+.btn.pink { background: var(--candy); }
+.btn.pink:hover { background: #ff7fb5; }
+.endless { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 14px; border-radius: 14px; background: rgba(255,95,162,0.14); border: 2px solid rgba(255,95,162,0.45); }
+.endless .t { font-family: var(--display); font-size: 24px; }
+.endless .d { font-size: 13px; font-weight: 800; color: var(--muted); }
+.result { width: min(460px, 100%); text-align: center; }
+.big-stars { font-size: 54px; letter-spacing: 6px; color: rgba(255,255,255,0.2); line-height: 1; }
+.big-stars b { color: var(--lemon); font-weight: 400; text-shadow: 0 3px 0 #d6457f; }
+.facts { display: flex; justify-content: center; gap: 22px; font-weight: 900; color: var(--muted); }
+.facts span b { display: block; font-family: var(--display); font-weight: 400; font-size: 30px; color: var(--text); }
+
+/* In-game corner buttons */
+#corner { position: fixed; top: max(10px, env(safe-area-inset-top, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); display: flex; gap: 8px; z-index: 5; }
+#corner button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--glass-edge); background: var(--glass); cursor: pointer; font-size: 18px; }
+#keysHint { position: fixed; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 7px 14px; font-size: 13px; font-weight: 800; color: var(--muted); white-space: nowrap; transition: opacity 0.8s; }
+#keysHint.fade { opacity: 0; }
+
+/* Touch buttons */
+#touch { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-bottom, 0px)); display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; pointer-events: none; }
+#touch .cl { display: flex; gap: 10px; pointer-events: auto; }
+#touch button { width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(40,22,72,0.75); font-size: 28px; font-weight: 900; touch-action: none; -webkit-tap-highlight-color: transparent; }
+#touch button.on { background: rgba(255,217,59,0.5); }
+#touch button.drop { background: rgba(255,95,162,0.55); }
+#touch button.turn { background: rgba(62,198,255,0.45); }
+@media (max-width: 380px) { #touch button { width: 60px; height: 60px; font-size: 24px; } }
+@media (max-width: 560px) { .levels { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; } .lvl .n { font-size: 24px; } .lvl .nw { display: none; } .lvl .st { font-size: 12px; } }
+</style>
+<body>
+<canvas id="view" tabindex="0"></canvas>
+
+<div id="corner" hidden>
+  <button type="button" id="pauseBtn" aria-label="pause">⏸</button>
+  <button type="button" id="soundBtn2" aria-label="sound">🔊</button>
+</div>
+<div id="keysHint" class="panel" hidden></div>
+<div id="touch" hidden>
+  <div class="cl">
+    <button type="button" data-act="left" aria-label="move left">◀</button>
+    <button type="button" data-act="right" aria-label="move right">▶</button>
+  </div>
+  <div class="cl">
+    <button type="button" data-act="down" aria-label="fall faster">▼</button>
+    <button type="button" class="turn" data-act="turn" aria-label="turn">⟳</button>
+    <button type="button" class="drop" data-act="drop" aria-label="drop">⤓</button>
+  </div>
+</div>
+
+<section id="menu" class="screen">
+  <div class="sheet panel">
+    <div class="brand">
+      <h1>Jelly Jam</h1>
+      <p>Stack the wobbly jellies. Fill a whole row to pop it!</p>
+    </div>
+    <div class="levels" id="levelGrid"></div>
+    <div class="endless">
+      <div><div class="t">♾️ Endless Jam</div><div class="d" id="endlessBest">Keep going as long as you can. It speeds up every 10 rows.</div></div>
+      <button type="button" class="btn pink" id="endlessBtn">Play endless</button>
+    </div>
+    <div class="how">
+      <div><b>Goal:</b> pop the number of rows the level asks for. Keep your jelly pile low for more stars.</div>
+      <div><b>Fizz Pop</b> 🍬 is a round candy. When it lands it pops every jelly around it.</div>
+      <div id="howKeys"><b>Keys:</b> <kbd>←</kbd><kbd>→</kbd> move, <kbd>↑</kbd> turn, <kbd>↓</kbd> faster, <kbd>Space</kbd> drop, <kbd>P</kbd> pause</div>
+    </div>
+    <div class="row">
+      <button type="button" class="btn go" id="playBtn">Play level 1</button>
+      <button type="button" class="btn" id="soundBtn">🔊 Sound on</button>
+    </div>
+  </div>
+</section>
+
+<section id="pause" class="screen" hidden>
+  <div class="sheet panel result">
+    <h2 class="title">Paused</h2>
+    <div class="row center">
+      <button type="button" class="btn go" id="resumeBtn">Keep playing</button>
+      <button type="button" class="btn" id="restartBtn">Start over</button>
+      <button type="button" class="btn" id="quitBtn">Levels</button>
+    </div>
+  </div>
+</section>
+
+<section id="result" class="screen" hidden>
+  <div class="sheet panel result">
+    <h2 class="title" id="resTitle">Level done!</h2>
+    <div class="big-stars" id="resStars"></div>
+    <p class="sub center" id="resSub"></p>
+    <div class="facts"><span><b id="resScore">0</b>score</span><span><b id="resRows">0</b>rows popped</span></div>
+    <div class="row center">
+      <button type="button" class="btn go" id="nextBtn">Next level</button>
+      <button type="button" class="btn" id="againBtn">Play again</button>
+      <button type="button" class="btn" id="levelsBtn">Levels</button>
+    </div>
+  </div>
+</section>
+
+<script src="/jelly-jam/engine.js"></script>
+<script>
+'use strict';
+const E = window.JellyEngine;
+const $ = (id) => document.getElementById(id);
+const canvas = $('view');
+const ctx = canvas.getContext('2d');
+
+/* ---------- Saved progress ---------- */
+const Save = {
+  key: 'jellyJam.v1',
+  data: { unlocked: 1, stars: {}, best: {}, endlessBest: 0, muted: false },
+  load() { try { const raw = localStorage.getItem(this.key); if (raw) Object.assign(this.data, JSON.parse(raw)); } catch (e) { /* storage unavailable */ } },
+  store() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) { /* storage unavailable */ } },
+};
+Save.load();
+
+/* ---------- Sound (tiny beeps made in the browser) ---------- */
+const Sound = {
+  ctx: null,
+  ensure() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    try { const AC = window.AudioContext || window.webkitAudioContext; if (AC) this.ctx = new AC(); } catch (e) { this.ctx = null; }
+  },
+  tone(freq, dur, type, vol, when, slide) {
+    if (Save.data.muted || !this.ctx) return;
+    const t = this.ctx.currentTime + (when || 0);
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+    g.gain.setValueAtTime(vol || 0.12, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.ctx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  },
+  move() { this.tone(520, 0.04, 'triangle', 0.04); },
+  turn() { this.tone(700, 0.07, 'triangle', 0.07, 0, 900); },
+  land() { this.tone(180, 0.12, 'sine', 0.16, 0, 110); },
+  drop() { this.tone(300, 0.1, 'square', 0.06, 0, 120); },
+  pop(n) { const notes = [523, 659, 784, 1046, 1318]; for (let i = 0; i <= Math.min(4, n); i++) this.tone(notes[i], 0.14, 'triangle', 0.12, i * 0.07); },
+  fizz() { this.tone(900, 0.25, 'sawtooth', 0.06, 0, 200); this.tone(1400, 0.18, 'triangle', 0.08, 0.05, 2200); },
+  win() { [523, 659, 784, 1046, 784, 1046].forEach((f, i) => this.tone(f, 0.18, 'triangle', 0.13, i * 0.11)); },
+  over() { [440, 370, 311, 262].forEach((f, i) => this.tone(f, 0.25, 'sine', 0.13, i * 0.16)); },
+  levelup() { [659, 880, 1175].forEach((f, i) => this.tone(f, 0.15, 'triangle', 0.12, i * 0.09)); },
+};
+function refreshSoundButtons() {
+  $('soundBtn').textContent = Save.data.muted ? '🔇 Sound off' : '🔊 Sound on';
+  $('soundBtn2').textContent = Save.data.muted ? '🔇' : '🔊';
+}
+function toggleSound() { Save.data.muted = !Save.data.muted; Save.store(); refreshSoundButtons(); Sound.ensure(); }
+$('soundBtn').onclick = toggleSound;
+$('soundBtn2').onclick = toggleSound;
+refreshSoundButtons();
+
+/* ---------- State ---------- */
+const S = {
+  screen: 'menu', // menu | play | pause | result
+  game: null,
+  mode: 'level', // level | endless
+  level: 1,
+  paused: false,
+  particles: [],
+  popups: [],
+  shake: 0,
+  wobble: 0,
+  endTimer: 0,
+  ending: null,
+  t: 0,
+};
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+
+/* ---------- Layout ---------- */
+let L = {};
+let DPR = 1;
+function layout() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  const W = window.innerWidth, H = window.innerHeight;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  const touchH = isTouch ? (W <= 380 ? 92 : 104) : 0;
+  const top = 62, pad = 14;
+  // Wide: side panel next to the jar. Tall: a strip above the jar.
+  const side = 5.4;
+  const cWide = Math.floor(Math.min((H - top - touchH - pad) / E.ROWS, (W - pad * 3) / (E.COLS + side)));
+  const cTall = Math.floor(Math.min((H - 12 - touchH - pad) / (E.ROWS + 3.1), (W - pad * 2) / E.COLS));
+  const wide = cWide >= cTall;
+  const c = Math.max(10, wide ? cWide : cTall);
+  L = { W, H, c, wide };
+  if (wide) {
+    const total = c * (E.COLS + side) + pad;
+    L.bx = Math.round((W - total) / 2);
+    L.by = Math.round(top + (H - top - touchH - c * E.ROWS - pad) / 2);
+    L.px = L.bx + c * E.COLS + pad; L.py = L.by; L.pw = c * side; L.ph = c * E.ROWS;
+  } else {
+    L.bx = Math.round((W - c * E.COLS) / 2);
+    L.by = Math.round(12 + c * 3.1);
+    // Leave room for the pause and sound buttons in the top right corner.
+    L.px = L.bx; L.py = 10; L.pw = Math.min(c * E.COLS, W - 112 - L.bx); L.ph = c * 2.7;
+  }
+}
+window.addEventListener('resize', layout);
+layout();
+
+/* ---------- Drawing helpers ---------- */
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v) => Math.max(0, Math.min(255, Math.round(v + amt * (amt > 0 ? 255 - v : v))));
+  const r = f(n >> 16), g = f((n >> 8) & 255), b = f(n & 255);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+/** One jelly. mood: awake (falling), sleepy (landed), happy (about to pop), ghost (where it will land). */
+function drawJelly(x, y, s, key, mood, squish) {
+  const shape = E.SHAPES[key];
+  const col = shape.color;
+  const k = squish || 0;
+  const w = s * (1 + k * 0.08), h = s * (1 - k * 0.08);
+  const cx = x + s / 2, cy = y + s / 2;
+  const x0 = cx - w / 2 + 1.5, y0 = cy - h / 2 + 1.5 + k * s * 0.04, w0 = w - 3, h0 = h - 3;
+  if (mood === 'ghost') {
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.setLineDash([Math.max(2, s / 7), Math.max(2, s / 9)]);
+    ctx.lineWidth = Math.max(1.5, s / 14);
+    ctx.strokeStyle = col;
+    rr(x0 + 1, y0 + 1, w0 - 2, h0 - 2, s * 0.28);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  if (shape.bomb) { drawFizz(cx, cy, s * 0.46); return; }
+  const grad = ctx.createLinearGradient(0, y0, 0, y0 + h0);
+  grad.addColorStop(0, shade(col, 0.25));
+  grad.addColorStop(1, shade(col, -0.22));
+  rr(x0, y0, w0, h0, s * 0.3);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, s / 22);
+  ctx.strokeStyle = shade(col, -0.4);
+  ctx.stroke();
+  // shine
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(x0 + w0 * 0.3, y0 + h0 * 0.24, w0 * 0.17, h0 * 0.09, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+  if (s < 13) return;
+  // face
+  const ey = y0 + h0 * 0.48, ex = w0 * 0.19, er = Math.max(1.5, s * 0.09);
+  ctx.fillStyle = '#2b1240';
+  ctx.strokeStyle = '#2b1240';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(1.2, s / 18);
+  if (mood === 'awake') {
+    for (const d of [-1, 1]) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(cx + d * ex, ey, er * 1.25, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2b1240';
+      ctx.beginPath(); ctx.arc(cx + d * ex, ey + er * 0.35, er * 0.7, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(cx, ey + er * 1.9, er * 0.9, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  } else if (mood === 'happy') {
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.arc(cx + d * ex, ey + er * 0.4, er, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(cx, ey + er * 1.5, er * 1.2, 0.05 * Math.PI, 0.95 * Math.PI); ctx.fill();
+  } else {
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.arc(cx + d * ex, ey - er * 0.2, er * 0.85, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,120,160,0.45)';
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.ellipse(cx + d * ex * 1.65, ey + er * 1.3, er * 0.9, er * 0.55, 0, 0, Math.PI * 2); ctx.fill(); }
+  }
+}
+
+function drawFizz(cx, cy, r) {
+  const spin = S.t * 3;
+  ctx.save();
+  ctx.translate(cx, cy);
+  // wrapper twists
+  ctx.fillStyle = '#ff9ed2';
+  for (const d of [-1, 1]) {
+    ctx.beginPath(); ctx.moveTo(d * r * 0.85, 0); ctx.lineTo(d * r * 1.35, -r * 0.45); ctx.lineTo(d * r * 1.35, r * 0.45); ctx.closePath(); ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+  ctx.rotate(spin);
+  ctx.fillStyle = '#ff4f9a';
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, r, (i * Math.PI) / 2, (i * Math.PI) / 2 + Math.PI / 4); ctx.closePath(); ctx.fill();
+  }
+  ctx.rotate(-spin);
+  ctx.lineWidth = Math.max(1, r / 9); ctx.strokeStyle = '#b8236a';
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+  // sparkle
+  const tw = 0.6 + 0.4 * Math.sin(S.t * 10);
+  ctx.fillStyle = 'rgba(255,255,200,' + tw + ')';
+  star(-r * 0.75, -r * 0.8, r * 0.38);
+  ctx.restore();
+}
+function star(x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5, rad = i % 2 ? r * 0.45 : r;
+    ctx.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad);
+  }
+  ctx.closePath(); ctx.fill();
+}
+
+/* Floating bubbles in the background */
+const bubbles = [];
+for (let i = 0; i < 26; i++) bubbles.push({ x: Math.random(), y: Math.random(), r: 6 + Math.random() * 26, v: 0.01 + Math.random() * 0.03, hue: [330, 50, 190, 140, 270][i % 5] });
+
+function drawBackground() {
+  const g = ctx.createLinearGradient(0, 0, 0, L.H);
+  g.addColorStop(0, '#5b2a8c'); g.addColorStop(0.55, '#3a1d63'); g.addColorStop(1, '#22123d');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, L.W, L.H);
+  for (const b of bubbles) {
+    const y = ((b.y - S.t * b.v) % 1 + 1) % 1;
+    ctx.fillStyle = 'hsla(' + b.hue + ',90%,70%,0.10)';
+    ctx.beginPath(); ctx.arc(b.x * L.W, y * (L.H + 60) - 30, b.r, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawJar() {
+  const c = L.c, w = c * E.COLS, h = c * E.ROWS;
+  const pad = Math.max(4, c * 0.22);
+  rr(L.bx - pad, L.by - pad, w + pad * 2, h + pad * 2, c * 0.55);
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fill();
+  rr(L.bx - pad / 2, L.by - pad / 2, w + pad, h + pad, c * 0.45);
+  ctx.fillStyle = 'rgba(20,10,40,0.82)'; ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.07)';
+  for (let y = 0; y < E.ROWS; y++) for (let x = 0; x < E.COLS; x++) {
+    ctx.beginPath(); ctx.arc(L.bx + x * c + c / 2, L.by + y * c + c / 2, Math.max(1, c * 0.06), 0, Math.PI * 2); ctx.fill();
+  }
+  // Star lines: keep the pile under them for more stars.
+  if (S.mode === 'level') {
+    const marks = [[E.STAR_HEIGHTS.three, 3], [E.STAR_HEIGHTS.two, 2]];
+    for (const [rows, n] of marks) {
+      const yy = L.by + (E.ROWS - rows) * c;
+      ctx.save();
+      ctx.setLineDash([c * 0.3, c * 0.25]);
+      ctx.strokeStyle = n === 3 ? 'rgba(255,217,59,0.35)' : 'rgba(255,217,59,0.2)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(L.bx, yy); ctx.lineTo(L.bx + w, yy); ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = n === 3 ? 'rgba(255,217,59,0.8)' : 'rgba(255,217,59,0.5)';
+      for (let i = 0; i < n; i++) star(L.bx - pad - c * 0.2 - i * c * 0.36, yy, c * 0.17);
+    }
+  }
+}
+
+function drawBoard() {
+  const g = S.game, c = L.c;
+  const clearing = g.phase === 'clearing';
+  const flash = clearing ? 1 - Math.max(0, g.clearTimer) / 0.32 : 0;
+  for (let y = 0; y < E.ROWS; y++) {
+    const popping = clearing && g.clearRows.indexOf(y) >= 0;
+    for (let x = 0; x < E.COLS; x++) {
+      const cell = g.board[y][x];
+      if (!cell) continue;
+      const px = L.bx + x * c, py = L.by + y * c;
+      if (popping) {
+        const s = c * (1 + flash * 0.25);
+        ctx.save(); ctx.globalAlpha = 1 - flash * 0.8;
+        drawJelly(px - (s - c) / 2, py - (s - c) / 2, s, cell.key, 'happy');
+        ctx.restore();
+      } else {
+        drawJelly(px, py, c, cell.key, 'sleepy', cell.squish || 0);
+      }
+    }
+  }
+  if (g.cur && g.phase === 'play') {
+    const gy = g.ghostY();
+    if (gy > g.cur.y) for (const [x, y] of g.cells({ key: g.cur.key, rot: g.cur.rot, x: g.cur.x, y: gy })) {
+      if (y >= 0) drawJelly(L.bx + x * c, L.by + y * c, c, g.cur.key, 'ghost');
+    }
+    const wob = Math.sin(S.t * 12) * 0.5 * S.wobble;
+    for (const [x, y] of g.cells()) {
+      if (y < 0) continue;
+      drawJelly(L.bx + x * c, L.by + y * c, c, g.cur.key, 'awake', wob);
+    }
+  }
+}
+
+function drawPiecePreview(key, cx, cy, size) {
+  const cells = E.ROTATIONS[key][0];
+  const xs = cells.map((p) => p[0]), ys = cells.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const ox = cx - ((maxX - minX + 1) * size) / 2, oy = cy - ((maxY - minY + 1) * size) / 2;
+  for (const [x, y] of cells) drawJelly(ox + (x - minX) * size, oy + (y - minY) * size, size, key, 'awake');
+}
+
+function label(text, x, y, size, color, align) {
+  ctx.font = size + 'px "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif';
+  ctx.fillStyle = color || '#fff';
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+}
+
+function drawHud() {
+  const g = S.game, c = L.c;
+  const left = S.mode === 'level' ? Math.max(0, g.goal() - g.levelLines) : null;
+  const levelText = S.mode === 'level' ? 'Level ' + g.level : 'Endless · Lv ' + g.level;
+  if (L.wide) {
+    const x = L.px, w = L.pw;
+    let y = L.py;
+    const box = (h) => { rr(x, y, w, h, c * 0.4); ctx.fillStyle = 'rgba(20,10,40,0.6)'; ctx.fill(); };
+    box(c * 2.1); label(levelText, x + w / 2, y + c * 1.05, Math.round(c * 0.9), '#ffd93b', 'center'); y += c * 2.5;
+    if (left != null) {
+      box(c * 3.2);
+      label('Rows to pop', x + w / 2, y + c * 0.7, Math.round(c * 0.55), '#e2d6ff', 'center');
+      label(String(left), x + w / 2, y + c * 1.7, Math.round(c * 1.2), '#fff', 'center');
+      const bw = w - c * 1.2, done = Math.min(1, g.levelLines / g.goal());
+      rr(x + c * 0.6, y + c * 2.55, bw, c * 0.32, c * 0.16); ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill();
+      if (done > 0) { rr(x + c * 0.6, y + c * 2.55, Math.max(c * 0.32, bw * done), c * 0.32, c * 0.16); ctx.fillStyle = '#4fdc8a'; ctx.fill(); }
+      y += c * 3.6;
+    } else {
+      box(c * 2.2);
+      label('Rows popped', x + w / 2, y + c * 0.65, Math.round(c * 0.55), '#e2d6ff', 'center');
+      label(String(g.lines), x + w / 2, y + c * 1.45, Math.round(c * 1.0), '#fff', 'center');
+      y += c * 2.6;
+    }
+    box(c * 2.2);
+    label('Score', x + w / 2, y + c * 0.65, Math.round(c * 0.55), '#e2d6ff', 'center');
+    label(String(g.score), x + w / 2, y + c * 1.45, Math.round(c * 0.95), '#fff', 'center');
+    y += c * 2.6;
+    box(c * 4.4);
+    label('Next', x + w / 2, y + c * 0.65, Math.round(c * 0.55), '#e2d6ff', 'center');
+    if (g.next) drawPiecePreview(g.next, x + w / 2, y + c * 2.55, c * 0.85);
+    y += c * 4.8;
+    if (g.next && E.SHAPES[g.next].bomb) label('Fizz Pop!', x + w / 2, y - c * 0.95, Math.round(c * 0.5), '#ff9ed2', 'center');
+  } else {
+    const x = L.px, y = L.py, w = L.pw, h = L.ph;
+    rr(x, y, w, h, c * 0.4); ctx.fillStyle = 'rgba(20,10,40,0.6)'; ctx.fill();
+    const col = w / 4;
+    const cell = (i, top, big, color) => {
+      label(top, x + col * i + col / 2, y + h * 0.3, Math.round(Math.min(c * 0.5, col * 0.2)), '#e2d6ff', 'center');
+      label(big, x + col * i + col / 2, y + h * 0.68, Math.round(Math.min(c * 0.85, col * 0.4)), color || '#fff', 'center');
+    };
+    cell(0, S.mode === 'level' ? 'Level' : 'Endless', String(g.level), '#ffd93b');
+    if (left != null) cell(1, 'Rows left', String(left)); else cell(1, 'Rows', String(g.lines));
+    cell(2, 'Score', String(g.score));
+    label('Next', x + col * 3.5, y + h * 0.18, Math.round(Math.min(c * 0.45, col * 0.2)), '#e2d6ff', 'center');
+    if (g.next) drawPiecePreview(g.next, x + col * 3.5, y + h * 0.6, Math.min(c * 0.55, col * 0.17));
+  }
+}
+
+function drawFx(dt) {
+  for (const p of S.particles) {
+    p.vy += 900 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+    ctx.globalAlpha = Math.max(0, p.life / p.max);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  S.particles = S.particles.filter((p) => p.life > 0);
+  for (const t of S.popups) {
+    t.life -= dt; t.y -= 40 * dt;
+    ctx.globalAlpha = Math.max(0, Math.min(1, t.life / 0.4));
+    ctx.save();
+    ctx.lineWidth = Math.max(3, L.c * 0.18); ctx.strokeStyle = '#7a1f52';
+    ctx.font = t.size + 'px "Lilita One", "Arial Rounded MT Bold", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.strokeText(t.text, t.x, t.y);
+    ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  S.popups = S.popups.filter((t) => t.life > 0);
+}
+
+function burst(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 120 + Math.random() * 280;
+    S.particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 180, r: 2 + Math.random() * L.c * 0.18, color, life: 0.6 + Math.random() * 0.4, max: 1 });
+  }
+}
+function popup(text, color, size) {
+  S.popups.push({ text, color: color || '#ffd93b', size: size || Math.round(L.c * 1.1), x: L.bx + (L.c * E.COLS) / 2, y: L.by + L.c * E.ROWS * 0.42, life: 1.3 });
+}
+
+/* ---------- Game flow ---------- */
+const POP_WORDS = ['', 'Pop!', 'Double pop!', 'Triple pop!', 'Mega jam!'];
+
+function handleEvents() {
+  const g = S.game;
+  for (const ev of g.drainEvents()) {
+    if (ev.type === 'move') Sound.move();
+    else if (ev.type === 'rotate') { Sound.turn(); S.wobble = 1; }
+    else if (ev.type === 'drop') Sound.drop();
+    else if (ev.type === 'land') {
+      Sound.land();
+      for (const [x, y] of ev.cells) if (y >= 0 && g.board[y][x]) g.board[y][x].squish = 1;
+    } else if (ev.type === 'clear') {
+      Sound.pop(ev.count);
+      for (const y of ev.rows) for (let x = 0; x < E.COLS; x++) {
+        const cell = g.board[y][x];
+        if (cell) burst(L.bx + x * L.c + L.c / 2, L.by + y * L.c + L.c / 2, E.SHAPES[cell.key].color, 4);
+      }
+      popup(POP_WORDS[Math.min(4, ev.count)] + ' +' + ev.points, ev.count >= 4 ? '#ff9ed2' : '#ffd93b');
+    } else if (ev.type === 'fizz') {
+      Sound.fizz();
+      S.shake = 0.3;
+      burst(L.bx + ev.x * L.c + L.c / 2, L.by + ev.y * L.c + L.c / 2, '#ff9ed2', 26);
+      for (const cell of ev.cells) burst(L.bx + cell.x * L.c + L.c / 2, L.by + cell.y * L.c + L.c / 2, E.SHAPES[cell.key].color, 5);
+      popup(ev.popped ? 'Fizz! +' + ev.popped * 10 : 'Fizz!', '#ff9ed2');
+    } else if (ev.type === 'levelup') {
+      Sound.levelup();
+      popup('Faster! Level ' + ev.level, '#4fdc8a');
+    } else if (ev.type === 'won') {
+      Sound.win();
+      S.ending = 'won'; S.endTimer = 0.9;
+      popup('Level done!', '#4fdc8a', Math.round(L.c * 1.3));
+      for (let i = 0; i < 6; i++) burst(L.bx + Math.random() * L.c * E.COLS, L.by + Math.random() * L.c * 8, ['#ffd93b', '#ff6fa8', '#3ec6ff', '#4fdc8a'][i % 4], 10);
+    } else if (ev.type === 'over') {
+      Sound.over();
+      S.ending = 'over'; S.endTimer = 1.0;
+    }
+  }
+}
+
+function startGame(mode, level) {
+  Sound.ensure();
+  S.mode = mode;
+  S.level = level || 1;
+  S.game = E.createGame({ level: S.level, endless: mode === 'endless' });
+  S.particles = []; S.popups = []; S.ending = null; S.paused = false;
+  clearInput();
+  show('play');
+  popup(mode === 'endless' ? 'Endless Jam!' : 'Level ' + S.level + ': pop ' + S.game.goal() + ' rows', '#ffffff', Math.round(L.c * 0.9));
+  showKeysHint();
+  canvas.focus();
+}
+
+function finish() {
+  const g = S.game;
+  const won = S.ending === 'won';
+  $('resScore').textContent = g.score;
+  $('resRows').textContent = g.lines;
+  $('nextBtn').hidden = !(won && S.mode === 'level' && S.level < E.LEVEL_COUNT);
+  $('againBtn').textContent = won ? 'Play again' : 'Try again';
+  if (S.mode === 'endless') {
+    const prev = Save.data.endlessBest || 0;
+    const isBest = g.score > prev;
+    const best = Math.max(prev, g.score);
+    Save.data.endlessBest = best;
+    $('resTitle').textContent = 'The jar is full!';
+    $('resStars').innerHTML = '';
+    $('resSub').textContent = isBest ? 'New best score!' : 'Best score: ' + best;
+  } else if (won) {
+    const k = String(S.level);
+    Save.data.stars[k] = Math.max(Save.data.stars[k] || 0, g.stars);
+    Save.data.best[k] = Math.max(Save.data.best[k] || 0, g.score);
+    Save.data.unlocked = Math.max(Save.data.unlocked, Math.min(E.LEVEL_COUNT, S.level + 1));
+    $('resTitle').textContent = S.level === E.LEVEL_COUNT ? 'You beat Jelly Jam!' : 'Level ' + S.level + ' done!';
+    $('resStars').innerHTML = '<b>' + '★'.repeat(g.stars) + '</b>' + '★'.repeat(3 - g.stars);
+    $('resSub').textContent = g.stars < 3 ? 'Keep the pile below the star lines for more stars.' : 'Super low pile. Three stars!';
+  } else {
+    $('resTitle').textContent = 'Oh no, the jar is full!';
+    $('resStars').innerHTML = '';
+    $('resSub').textContent = 'Pop ' + Math.max(0, g.goal() - g.levelLines) + ' more rows to finish level ' + S.level + '.';
+  }
+  Save.store();
+  show('result');
+  (won && !$('nextBtn').hidden ? $('nextBtn') : $('againBtn')).focus();
+}
+
+function show(screen) {
+  S.screen = screen;
+  $('menu').hidden = screen !== 'menu';
+  $('pause').hidden = screen !== 'pause';
+  $('result').hidden = screen !== 'result';
+  $('corner').hidden = screen !== 'play';
+  $('touch').hidden = !(isTouch && screen === 'play');
+  if (screen !== 'play') $('keysHint').hidden = true;
+  if (screen === 'menu') renderMenu();
+}
+
+function pauseGame() {
+  if (S.screen !== 'play' || S.ending) return;
+  clearInput();
+  show('pause');
+  $('resumeBtn').focus();
+}
+function resumeGame() { show('play'); canvas.focus(); }
+
+function renderMenu() {
+  const grid = $('levelGrid');
+  grid.innerHTML = '';
+  const newShapes = (i) => {
+    if (i === 0) return 'Small jellies';
+    const before = E.LEVELS[i - 1].pool, now = E.LEVELS[i].pool;
+    const added = now.filter((k) => before.indexOf(k) < 0).map((k) => E.SHAPES[k].name);
+    return added.length ? 'New: ' + added.join(', ') : 'Faster!';
+  };
+  for (let i = 0; i < E.LEVEL_COUNT; i++) {
+    const n = i + 1, st = Save.data.stars[n] || 0, open = n <= Save.data.unlocked;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'lvl'; b.disabled = !open;
+    b.innerHTML = '<span class="n">' + (open ? n : '🔒') + '</span><span class="st"><b>' + '★'.repeat(st) + '</b>' + '★'.repeat(3 - st) + '</span><span class="nw">' + newShapes(i) + '</span>';
+    b.onclick = () => startGame('level', n);
+    grid.appendChild(b);
+  }
+  const target = Math.min(Save.data.unlocked, E.LEVEL_COUNT);
+  grid.children[target - 1].classList.add('cur');
+  $('playBtn').textContent = 'Play level ' + target;
+  $('playBtn').onclick = () => startGame('level', target);
+  $('endlessBest').textContent = Save.data.endlessBest ? 'Best score: ' + Save.data.endlessBest + '. It speeds up every 10 rows.' : 'Keep going as long as you can. It speeds up every 10 rows.';
+  $('howKeys').innerHTML = isTouch
+    ? '<b>Buttons:</b> ◀ ▶ move, ⟳ turn, ▼ faster, ⤓ drop it all the way'
+    : '<b>Keys:</b> <kbd>←</kbd><kbd>→</kbd> move, <kbd>↑</kbd> turn, <kbd>↓</kbd> faster, <kbd>Space</kbd> drop, <kbd>P</kbd> pause';
+}
+
+$('endlessBtn').onclick = () => startGame('endless', 1);
+$('pauseBtn').onclick = pauseGame;
+$('resumeBtn').onclick = resumeGame;
+$('restartBtn').onclick = () => startGame(S.mode, S.level);
+$('quitBtn').onclick = () => show('menu');
+$('levelsBtn').onclick = () => show('menu');
+$('againBtn').onclick = () => startGame(S.mode, S.level);
+$('nextBtn').onclick = () => startGame('level', S.level + 1);
+
+let hintTimer = 0;
+function showKeysHint() {
+  const h = $('keysHint');
+  if (isTouch) { h.hidden = true; return; }
+  h.innerHTML = '<kbd>←</kbd><kbd>→</kbd> move &nbsp; <kbd>↑</kbd> turn &nbsp; <kbd>↓</kbd> faster &nbsp; <kbd>Space</kbd> drop &nbsp; <kbd>P</kbd> pause';
+  h.hidden = false; h.classList.remove('fade');
+  clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.add('fade'), 6000);
+}
+
+/* ---------- Controls ---------- */
+const held = { left: false, right: false };
+let dasDir = 0, dasTimer = 0;
+const DAS_DELAY = 0.17, DAS_RATE = 0.055;
+
+function act(name, down) {
+  const g = S.game;
+  if (!g || S.screen !== 'play' || S.ending) return;
+  if (name === 'left' || name === 'right') {
+    held[name] = down;
+    const dir = name === 'left' ? -1 : 1;
+    if (down) { g.move(dir); dasDir = dir; dasTimer = DAS_DELAY; }
+    else if (dasDir === dir) {
+      const other = name === 'left' ? 'right' : 'left';
+      dasDir = held[other] ? -dir : 0; dasTimer = DAS_DELAY;
+    }
+  } else if (name === 'down') g.setSoftDrop(down);
+  else if (down && name === 'turn') g.rotate(1);
+  else if (down && name === 'turnback') g.rotate(-1);
+  else if (down && name === 'drop') g.hardDrop();
+}
+function clearInput() {
+  held.left = held.right = false; dasDir = 0;
+  if (S.game) S.game.setSoftDrop(false);
+  for (const b of document.querySelectorAll('#touch button.on')) b.classList.remove('on');
+}
+
+const KEYS = {
+  ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'turn', KeyW: 'turn', KeyX: 'turn', KeyZ: 'turnback', KeyQ: 'turnback',
+  ArrowDown: 'down', KeyS: 'down', Space: 'drop',
+};
+window.addEventListener('keydown', (e) => {
+  Sound.ensure();
+  if (S.screen === 'play') {
+    if (e.code === 'KeyP' || e.code === 'Escape') { e.preventDefault(); pauseGame(); return; }
+    if (e.code === 'KeyM') { toggleSound(); return; }
+    const a = KEYS[e.code];
+    if (a) { e.preventDefault(); if (!e.repeat) act(a, true); }
+  } else if (S.screen === 'pause' && (e.code === 'KeyP' || e.code === 'Escape')) {
+    e.preventDefault(); resumeGame();
+  } else if (S.screen === 'menu' && e.code === 'Enter' && document.activeElement === canvas) {
+    $('playBtn').click();
+  }
+});
+window.addEventListener('keyup', (e) => {
+  const a = KEYS[e.code];
+  if (a && S.screen === 'play') act(a, false);
+});
+window.addEventListener('blur', pauseGame);
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+for (const btn of document.querySelectorAll('#touch button')) {
+  const a = btn.dataset.act;
+  const down = (e) => { e.preventDefault(); Sound.ensure(); btn.classList.add('on'); act(a, true); try { btn.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ } };
+  const up = (e) => { e.preventDefault(); if (!btn.classList.contains('on')) return; btn.classList.remove('on'); act(a, false); };
+  btn.addEventListener('pointerdown', down);
+  btn.addEventListener('pointerup', up); btn.addEventListener('pointercancel', up); btn.addEventListener('lostpointercapture', up);
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+/* ---------- Main loop ---------- */
+function update(dt) {
+  S.t += dt;
+  const g = S.game;
+  if (!g || S.screen !== 'play') return;
+  if (!S.ending) {
+    if (dasDir) {
+      dasTimer -= dt;
+      while (dasTimer <= 0) { if (!g.move(dasDir)) { dasTimer = DAS_RATE; break; } dasTimer += DAS_RATE; }
+    }
+    g.update(dt);
+  }
+  handleEvents();
+  S.wobble = Math.max(0, S.wobble - dt * 3);
+  S.shake = Math.max(0, S.shake - dt);
+  for (const row of g.board) for (const cell of row) if (cell && cell.squish) cell.squish = Math.max(0, cell.squish - dt * 5);
+  if (S.ending) { S.endTimer -= dt; if (S.endTimer <= 0) finish(); }
+}
+
+function render(dt) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawBackground();
+  if (!S.game || S.screen === 'menu') { drawFx(dt); return; }
+  ctx.save();
+  if (S.shake > 0) ctx.translate((Math.random() - 0.5) * L.c * 0.4 * S.shake * 3, (Math.random() - 0.5) * L.c * 0.4 * S.shake * 3);
+  drawJar();
+  drawBoard();
+  ctx.restore();
+  drawHud();
+  drawFx(dt);
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  render(dt);
+  requestAnimationFrame(frame);
+}
+show('menu');
+requestAnimationFrame(frame);
+
+/* Test hooks (used by automated checks; harmless for players) */
+window.JellyJam = {
+  engine: E,
+  start: (mode, level) => startGame(mode, level),
+  game: () => S.game,
+  screen: () => S.screen,
+  step(sec) { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) update(1 / 60); render(0); },
+  save: Save,
+};
+</script>
+</html>

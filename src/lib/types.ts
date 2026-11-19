@@ -13,10 +13,11 @@ export type GameId =
   | 'racing'
   | 'cricket'
   | 'dinoduel'
-  | 'dinotrucks';
+  | 'dinotrucks'
+  | 'jellyjam';
 
 /** Games that ship as their own static page (GameMeta.embedSrc) instead of a stage component. */
-export type EmbeddedGameId = 'racing' | 'cricket' | 'dinoduel' | 'dinotrucks';
+export type EmbeddedGameId = 'racing' | 'cricket' | 'dinoduel' | 'dinotrucks' | 'jellyjam';
 
 export type GameCategory = 'learn' | 'play';
 

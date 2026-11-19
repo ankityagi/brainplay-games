@@ -89,3 +89,148 @@ describe('Dino Truck Rumble racing page', () => {
     expect((html.match(/\{ id: \d, track: '/g) || []).length).toBe(6);
   });
 });
+
+describe('Jelly Jam falling-blocks page', () => {
+  const html = readFileSync(resolve(__dirname, '../public/jelly-jam/index.html'), 'utf8');
+  const engineSrc = readFileSync(resolve(__dirname, '../public/jelly-jam/engine.js'), 'utf8');
+  type Cell = { key: string } | null;
+  interface JellyGame {
+    board: Cell[][];
+    cur: { key: string; rot: number; x: number; y: number } | null;
+    phase: string;
+    score: number;
+    lines: number;
+    levelLines: number;
+    stars: number;
+    level: number;
+    goal(): number;
+    move(dx: number): boolean;
+    rotate(dir: number): boolean;
+    hardDrop(): number;
+    update(dt: number): void;
+    setRow(y: number, pattern: string, key?: string): void;
+    setPiece(key: string, x?: number, rot?: number): void;
+    drainEvents(): { type: string }[];
+  }
+  interface JellyEngineApi {
+    COLS: number;
+    ROWS: number;
+    LEVEL_COUNT: number;
+    SHAPES: Record<string, { name: string; grid: string[]; bomb?: boolean }>;
+    ROTATIONS: Record<string, [number, number][][]>;
+    LEVELS: { id: number; goal: number; fall: number; pool: string[]; fizz: number }[];
+    createGame(opts: { level?: number; endless?: boolean; seed?: number }): JellyGame;
+    starsForHeight(h: number): number;
+  }
+  const sandbox: { JellyEngine?: JellyEngineApi } = {};
+  new Function('window', engineSrc)(sandbox);
+  const E = sandbox.JellyEngine as JellyEngineApi;
+
+  it('is listed as a Play game that opens its own page', () => {
+    const game = GAMES.find((g) => g.id === 'jellyjam');
+    expect(game?.embedSrc).toBe('/jelly-jam/index.html');
+    expect(game?.category).toBe('play');
+    expect(game?.title).toBe('Jelly Jam');
+  });
+
+  it('only loads its own rules file', () => {
+    const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
+    expect(srcs).toEqual(['/jelly-jam/engine.js']);
+  });
+
+  it('has 10 levels that get faster and add bigger shapes', () => {
+    expect(E.LEVELS).toHaveLength(10);
+    for (let i = 1; i < E.LEVELS.length; i++) {
+      expect(E.LEVELS[i].fall).toBeLessThan(E.LEVELS[i - 1].fall);
+      expect(E.LEVELS[i].pool.length).toBeGreaterThanOrEqual(E.LEVELS[i - 1].pool.length);
+      expect(E.LEVELS[i].goal).toBeGreaterThanOrEqual(E.LEVELS[i - 1].goal);
+    }
+    const size = (k: string) => E.ROTATIONS[k][0].length;
+    expect(Math.max(...E.LEVELS[0].pool.map(size))).toBeLessThanOrEqual(4);
+    expect(E.LEVELS[9].pool.some((k) => size(k) === 5)).toBe(true);
+  });
+
+  it('turns every shape without changing its size, and four turns bring it back', () => {
+    for (const key of Object.keys(E.SHAPES)) {
+      const rots = E.ROTATIONS[key];
+      const n = E.SHAPES[key].grid.length;
+      for (const r of rots) {
+        expect(r.length).toBe(rots[0].length);
+        for (const [x, y] of r) {
+          expect(x).toBeGreaterThanOrEqual(0);
+          expect(y).toBeLessThan(n);
+        }
+      }
+    }
+  });
+
+  it('pops a full row and counts it toward the level goal', () => {
+    const g = E.createGame({ level: 1, seed: 7 });
+    g.setRow(17, 'XXXXXXXX..');
+    g.setPiece('twins', 8);
+    g.drainEvents();
+    g.hardDrop();
+    expect(g.phase).toBe('clearing');
+    g.update(1);
+    expect(g.lines).toBe(1);
+    expect(g.board[17].every((c) => c === null)).toBe(true);
+    expect(g.score).toBeGreaterThanOrEqual(100);
+  });
+
+  it('finishes a level after its goal and gives stars for a low pile', () => {
+    const g = E.createGame({ level: 1, seed: 3 });
+    g.levelLines = g.goal() - 1;
+    g.setRow(17, 'XXXXXXXX..');
+    g.setPiece('twins', 8);
+    g.hardDrop();
+    g.update(1);
+    expect(g.phase).toBe('won');
+    expect(g.stars).toBe(3);
+    expect(E.starsForHeight(11)).toBe(2);
+    expect(E.starsForHeight(15)).toBe(1);
+  });
+
+  it('Fizz Pop clears the jellies around where it lands', () => {
+    const g = E.createGame({ level: 1, seed: 1 });
+    g.setRow(16, 'XXXX..XXXX');
+    g.setRow(17, 'XXXX.XXXXX');
+    g.setPiece('fizz', 4);
+    g.hardDrop();
+    expect(g.board[17][4]).toBe(null);
+    expect(g.board[16][3]).toBe(null);
+    expect(g.board[17][3]).toBe(null);
+    expect(g.board[17][5]).toBe(null);
+    expect(g.board[17][0]).not.toBe(null);
+  });
+
+  it('ends the game when a new shape has no room', () => {
+    const g = E.createGame({ level: 1, seed: 2 });
+    for (let y = 2; y < E.ROWS; y++) g.setRow(y, y % 2 ? 'XXXXXXXXX.' : '.XXXXXXXXX');
+    g.setPiece('cube', 4);
+    g.hardDrop();
+    expect(g.phase).toBe('over');
+  });
+
+  it('keeps shapes inside the jar walls', () => {
+    const g = E.createGame({ level: 1, seed: 4 });
+    g.setPiece('noodle', 0);
+    expect(g.move(-1)).toBe(false);
+    for (let i = 0; i < 20; i++) g.move(1);
+    expect(g.rotate(1)).toBe(true);
+    for (let i = 0; i < 20; i++) g.move(1);
+    expect(g.rotate(1)).toBe(true);
+    const xs = (g.cur ? E.ROTATIONS[g.cur.key][g.cur.rot].map(([x]) => x + (g.cur as { x: number }).x) : []);
+    expect(Math.max(...xs)).toBeLessThan(E.COLS);
+  });
+
+  it('plays a random game to the end without errors', () => {
+    const g = E.createGame({ endless: true, seed: 99 });
+    for (let i = 0; i < 4000 && g.phase !== 'over'; i++) {
+      if (i % 3 === 0) g.move(i % 2 ? 1 : -1);
+      if (i % 7 === 0) g.rotate(1);
+      if (i % 11 === 0) g.hardDrop();
+      g.update(1 / 30);
+    }
+    expect(g.phase).toBe('over');
+  });
+});

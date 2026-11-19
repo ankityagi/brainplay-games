@@ -3,7 +3,7 @@
    Everything lives in this browser's localStorage, so it works with no internet (on a flight):
    checking a code, the play-time bank, the parent PIN and the parent's unlock.
    Learn games are never gated. */
-import { check as checkCode, today, _sha256 } from './playcode';
+import { check as checkCode, clean, today, _sha256 } from './playcode';
 
 const KEY = 'brainplay:gate';
 
@@ -66,12 +66,25 @@ export const isFreeNow = (s: GateState, now = Date.now()): boolean =>
 
 export const isLocked = (s: GateState, now = Date.now()): boolean => !isFreeNow(s, now) && s.bankSeconds <= 0;
 
+/**
+ * Parent code: works every time, any day, with no internet. Typed into the same code box,
+ * it opens every game for PARENT_FREE_MINUTES (adding to any free play already running).
+ * It sits in the page code, so it keeps young kids out but isn't real security.
+ */
+export const PARENT_CODE = '2451Q1';
+export const PARENT_FREE_MINUTES = 60;
+
 export type RedeemResult =
-  | { ok: true; player: string; name: string; minutes: number }
+  | { ok: true; parent?: false; player: string; name: string; minutes: number }
+  | { ok: true; parent: true; until: number }
   | { ok: false; reason: string };
 
 /** Check a code and, if it's good and unused, add its minutes to the bank. */
 export function redeem(text: string, day: string = today()): RedeemResult {
+  if (clean(text) === PARENT_CODE) {
+    const s = updateGate((g) => ({ ...g, freeUntil: Math.max(Date.now(), g.freeUntil ?? 0) + PARENT_FREE_MINUTES * 60000 }));
+    return { ok: true, parent: true, until: s.freeUntil! };
+  }
   const r = checkCode(text, day);
   if (!r.ok) return r;
   const s = getGate();

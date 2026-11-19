@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { KIDS, formatTime, getGate, hashPin, isFreeNow, updateGate } from '../lib/playgate';
+import { KIDS, PARENT_CODE, PARENT_FREE_MINUTES, formatTime, getGate, hashPin, isFreeNow, updateGate } from '../lib/playgate';
 import { useGate } from '../lib/useGate';
 
 /**
@@ -143,6 +143,14 @@ function Settings() {
           </div>
         </section>
       )}
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 flex flex-col gap-2">
+        <h2 className="text-xl font-bold">Parent code</h2>
+        <p className="text-slate-400">
+          Type <span className="font-mono text-amber-300 text-lg">{PARENT_CODE.slice(0, 3)}-{PARENT_CODE.slice(3)}</span> into any code box to open every game for{' '}
+          {PARENT_FREE_MINUTES} minutes. It works every time, on any day, with no internet.
+        </p>
+      </section>
 
       <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 flex flex-col gap-3">
         <h2 className="text-xl font-bold">Codes used on this device</h2>

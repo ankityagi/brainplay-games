@@ -10,7 +10,11 @@ export default function CodeEntry({ autoFocus = false }: { autoFocus?: boolean }
     e.preventDefault();
     if (!text.trim()) return;
     const r = redeem(text);
-    if (r.ok) {
+    if (r.ok && r.parent) {
+      const until = new Date(r.until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      setMsg({ ok: true, text: `Parent code: every game is open until ${until}.` });
+      setText('');
+    } else if (r.ok) {
       setMsg({ ok: true, text: `Nice, ${r.name}! +${r.minutes} minutes of play time.` });
       setText('');
     } else {

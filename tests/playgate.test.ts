@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { check, make } from '../src/lib/playcode';
-import { getGate, isLocked, redeem, spendSeconds, updateGate } from '../src/lib/playgate';
+import { PARENT_CODE, getGate, isLocked, redeem, spendSeconds, updateGate } from '../src/lib/playgate';
 
 const DAY = '2026-11-18';
 
@@ -58,5 +58,15 @@ describe('coin gate', () => {
     spendSeconds(5); // free play doesn't use up play time
     expect(getGate().bankSeconds).toBe(0);
     expect(isLocked(getGate(), Date.now() + 120000)).toBe(true);
+  });
+
+  it('parent code opens everything every time, on any day', () => {
+    const r1 = redeem('245-1q1', '2030-01-01');
+    expect(r1).toMatchObject({ ok: true, parent: true });
+    expect(isLocked(getGate())).toBe(false);
+    const first = getGate().freeUntil!;
+    expect(redeem(PARENT_CODE).ok).toBe(true);
+    expect(getGate().freeUntil! - first).toBe(60 * 60000);
+    expect(getGate().usedCodes).toHaveLength(0);
   });
 });

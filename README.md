@@ -28,7 +28,8 @@ Play game is on screen. Each code works once, and only on the day it was made.
   PIN hash, codes used).
 - **Parent page** at `#/parent` (link at the bottom of the home page): PIN set on first visit;
   turn the gate on or off, unlock everything for 30 minutes to 4 hours, add or clear play time,
-  see codes used.
+  see codes used. The page also shows the **parent code** (`PARENT_CODE` in
+  `src/lib/playgate.ts`), which works every time in any code box and opens every game for an hour.
 - **Offline:** `public/sw.js` saves the whole site on first visit (file list in
   `precache.json`, written at build time by the plugin in `vite.config.ts`), so games, codes
   and the parent page all work with no internet, e.g. on a flight. Open the site once while

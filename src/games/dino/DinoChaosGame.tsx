@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameComponentProps } from '../../lib/types';
-import { DINO_STAGES, DINO_TIERS, starsFor } from './stages';
+import { DINO_STAGES, DINO_TIERS, EAT_PER_DINO, starsFor, tierForEaten } from './stages';
 import { DinoProblem, generateProblem } from './generator';
 
 const ASPECT_RATIO = 4 / 3;
@@ -50,11 +50,6 @@ let nextId = 1;
 
 export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
   const config = DINO_STAGES[stage - 1];
-  // Clearing a stage's target moves you on to the next dinosaur - your size is fixed
-  // for the whole stage (stage 1 = Lizard, ..., stage 10 = Spinosaurus), it doesn't
-  // grow mid-stage.
-  const myTier = Math.min(MAX_TIER, stage);
-
   const [player, setPlayer] = useState({ x: 50, y: 50 });
   const [npcs, setNpcs] = useState<Npc[]>([]);
   const [eaten, setEaten] = useState(0);
@@ -64,6 +59,10 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [box, setBox] = useState({ width: 640, height: 480 });
   const [warning, setWarning] = useState(false);
+  const [grewTo, setGrewTo] = useState<number | null>(null);
+  // Every game starts as the Lizard; each EAT_PER_DINO animals eaten grows you into
+  // the next dinosaur, up to the Spinosaurus.
+  const myTier = tierForEaten(eaten, MAX_TIER);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef(player);
@@ -109,6 +108,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
     setEaten(0);
     eatenRef.current = 0;
     setEncounter(null);
+    setGrewTo(null);
     setNpcs([
       ...Array.from({ length: config.bugCount }, () => spawnNpc(start, true)),
       ...Array.from({ length: config.npcCount }, () => spawnNpc(start, false)),
@@ -171,8 +171,11 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
       }
       if (kind === 'eat' && correct) {
         const nextEaten = eatenRef.current + 1;
+        const before = tierForEaten(eatenRef.current, MAX_TIER);
+        const after = tierForEaten(nextEaten, MAX_TIER);
         eatenRef.current = nextEaten;
         setEaten(nextEaten);
+        if (after > before) setGrewTo(after);
       }
       setNpcs((prev) => {
         const removed = prev.find((n) => n.id === current.npcId);
@@ -189,6 +192,13 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
     if (!current || current.feedback) return;
     resolveEncounter(choiceIndex === current.problem.correctIndex, choiceIndex === current.problem.correctIndex ? 'correct' : 'wrong');
   }
+
+  // Hide the "you grew" banner after a moment
+  useEffect(() => {
+    if (grewTo === null) return;
+    const t = setTimeout(() => setGrewTo(null), 2000);
+    return () => clearTimeout(t);
+  }, [grewTo]);
 
   // Countdown while a question is active
   useEffect(() => {
@@ -248,6 +258,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
       last = now;
 
       if (startedRef.current && !encounterRef.current && !finishedRef.current) {
+        const myTier = tierForEaten(eatenRef.current, MAX_TIER);
         // move player
         let dx = 0;
         let dy = 0;
@@ -364,7 +375,16 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
         <span className="text-slate-400">
           You: <span className="text-slate-100 font-semibold">{myTierInfo.emoji} {myTierInfo.label}</span>
         </span>
-        <span className="text-slate-400">
+        <span className="text-slate-400" data-testid="next-dino">
+          {myTier < MAX_TIER ? (
+            <>
+              Next dino: <span className="text-slate-100 font-bold">{eaten % EAT_PER_DINO}</span> / {EAT_PER_DINO}
+            </>
+          ) : (
+            <span className="text-amber-400 font-semibold">Biggest dino!</span>
+          )}
+        </span>
+        <span className="text-slate-400" data-testid="stage-goal">
           Eaten: <span className="text-slate-100 font-bold">{eaten}</span> / {config.targetScore}
         </span>
       </div>
@@ -431,6 +451,15 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
               {myTierInfo.emoji}
             </span>
           </div>
+
+          {grewTo !== null && !encounter && (
+            <div
+              data-testid="grew-banner"
+              className="absolute top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-400 text-slate-900 font-bold px-4 py-1 text-sm sm:text-base shadow-lg pointer-events-none animate-pulse"
+            >
+              You grew into a {DINO_TIERS[grewTo].label}!
+            </div>
+          )}
 
           {!started && !encounter && (
             <button
@@ -538,7 +567,7 @@ export default function DinoChaosGame({ stage, onFinish }: GameComponentProps) {
         </div>
       ) : (
         <p className="shrink-0 text-xs sm:text-sm text-slate-600 text-center">
-          Arrow keys or WASD to move. Bump a smaller dino to eat it, but watch out for bigger ones!
+          Arrow keys or WASD to move. Eat {EAT_PER_DINO} smaller animals to grow into the next dino, but watch out for bigger ones!
         </p>
       )}
     </div>

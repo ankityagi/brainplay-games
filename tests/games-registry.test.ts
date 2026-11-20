@@ -56,12 +56,24 @@ describe('Dino Duel fighting page', () => {
     expect(html).not.toMatch(/<script[^>]+src=/);
   });
 
-  it('has the five dinosaurs, best of 3 rounds and 10 levels', () => {
-    for (const name of ['T-Rex', 'Spinosaurus', 'Ankylosaurus', 'Triceratops', 'Velociraptor']) {
+  it('has all ten dinosaurs, best of 3 rounds, 10 levels and a tough level 10 boss', () => {
+    for (const name of [
+      'T-Rex',
+      'Spinosaurus',
+      'Ankylosaurus',
+      'Triceratops',
+      'Velociraptor',
+      'Stegosaurus',
+      'Carnotaurus',
+      'Pachycephalosaurus',
+      'Therizinosaurus',
+      'Giganotosaurus',
+    ]) {
       expect(html).toContain(`name: '${name}'`);
     }
     expect(html).toContain('ROUNDS_TO_WIN = 2');
     expect(html).toContain('LEVEL_COUNT = 10');
+    expect(html).toContain('PERFECT_BLOCK_WIN');
   });
 });
 

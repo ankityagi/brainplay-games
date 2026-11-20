@@ -1,18 +1,35 @@
 # BrainPlay Games
 
-Six free browser games, no sign-up required. Each game has 10 stages that get
-progressively harder; progress is saved per-browser in `localStorage`.
+16 free browser games with no sign-up required, hosted at `games.ankityagi.online`.
+Progress and play-time state are saved per-browser in `localStorage`, and the whole site works offline once visited online.
 
 ## Games
 
-| Game | Type | What it tests |
+### Learn (always free)
+
+| Game | Stages | What it tests |
 | --- | --- | --- |
-| 🔢 Math Blitz | Learn | Arithmetic, from single-digit addition to mixed operations with negatives |
-| 🌍 Geo Explorer | Learn | Flags, capitals and continents |
-| 🧩 Pattern Master | Learn | Number/shape sequence logic puzzles |
-| 💻 Code Quest | Learn | "What does this code print?" style programming puzzles |
-| ♟️ Chess Puzzles | Play | Find the checkmate in one move (every puzzle is programmatically verified with chess.js) |
-| 🐍 Snake | Play | The arcade classic — faster speed, bigger board, more obstacles each stage |
+| 🔢 Math Blitz (`math`) | 10 stages | Arithmetic quiz, from single-digit addition to mixed operations with negatives |
+| 🌍 Geo Explorer (`geography`) | 10 stages | World capitals quiz with flags and LRU country rotation |
+| 🗺️ World Map (`map`) | 10 stages | Click the target country on an interactive SVG world map with distance warmth feedback |
+| 🧩 Pattern Master (`logic`) | 10 stages | Number and shape sequence logic puzzles |
+| 💻 Code Quest (`coding`) | 10 stages | "What does this code print?" programming puzzles |
+| #️⃣ Sudoku (`sudoku`) | 10 stages | Mini 4×4 and 6×6 puzzles scaling up to classic 9×9 grids |
+
+### Play (uses play time when coin gate is on)
+
+| Game | Levels / Stages | Description |
+| --- | --- | --- |
+| ♟️ Chess Puzzles (`chess`) | 10 stages | Find checkmate in one move (every puzzle verified with `chess.js`) |
+| 🐍 Snake (`snake`) | 10 stages | Grid-based arcade classic — faster speed, bigger board, more obstacles each stage |
+| 🚀 Math Blaster (`blaster`) | 10 stages | Turret arcade shooter — shoot the drifting cloud matching the math problem |
+| 🦖 Dinosaur Chaos (`dino`) | 10 stages | Eat smaller dinos and dodge bigger ones while solving math encounters |
+| 🤖 RoboShooter (`roboshooter`) | 10 stages | First-person arcade shooter against approaching robots with math reloads |
+| 🏎️ Zoom Valley (`racing`) | 4 levels (embedded) | 3D Three.js racer with 5 cars, 2 tracks (incl. Seashell Coast), computer rivals, and 2-player split screen |
+| 🏏 Boundary Bash (`cricket`) | 3 levels (embedded) | 5-over cricket batting game with named bowlers and shot timing |
+| 🦕 Dino Duel (`dinoduel`) | 10 levels (embedded) | Side-view 1P/2P dinosaur fighting game with 10 dinosaurs, Perfect Block parries, best-of-3 rounds, and an apex Level 10 boss |
+| 🦖 Dino Truck Rumble (`dinotrucks`) | 6 levels (embedded) | 3D Three.js dino truck racing game with 5 trucks and per-truck attacks |
+| 🍬 Jelly Jam (`jellyjam`) | 10 levels (embedded) | Falling jelly-shapes puzzle game with Fizz Pop bombs and endless mode |
 
 ## Coin gate and play time
 
@@ -22,10 +39,10 @@ code, which they type into BrainPlay (home page, or the screen a Play game shows
 out). A good code adds its minutes to this device's play time, which counts down only while a
 Play game is on screen. Each code works once, and only on the day it was made.
 
-- `src/lib/playcode.ts`: code check, a copy of the learning sites' `js/playcode.js`
-  (format documented at the top of the file).
-- `src/lib/playgate.ts`: gate state in localStorage (on/off, play time left, parent unlock,
-  PIN hash, codes used).
+- `src/lib/playcode.ts`: offline Crockford base32 + HMAC-SHA256 code check, kept in sync with the
+  learning sites' `js/playcode.js` (format documented at the top of the file).
+- `src/lib/playgate.ts`: gate state in `localStorage` (`brainplay:gate`: on/off, play time left,
+  parent unlock, PIN hash, codes used).
 - **Parent page** at `#/parent` (link at the bottom of the home page): PIN set on first visit;
   turn the gate on or off, unlock everything for 30 minutes to 4 hours, add or clear play time,
   see codes used. The page also shows the **parent code** (`PARENT_CODE` in
@@ -37,31 +54,29 @@ Play game is on screen. Each code works once, and only on the day it was made.
 
 ## Stack
 
-React + TypeScript + Vite + Tailwind CSS + React Router. No backend, no
-authentication — everything runs client-side and each game is code-split
-and lazy-loaded.
+React 18 + TypeScript + Vite + Tailwind CSS + React Router (`HashRouter`), plus `d3-geo` / `topojson-client` / `world-atlas` for World Map and local vendored `three.min.js` for 3D embedded games. No backend, no authentication — everything runs client-side, React games are code-split and lazy-loaded, and CI deploys `dist/` to GitHub Pages on pushes to `main`.
 
 ## Development
 
 ```bash
 npm install
-npm run dev       # start dev server
-npm run test      # run unit tests (progress store, scoring, chess puzzle bank)
+npm run dev        # start dev server
+npm run test       # run Vitest unit tests (registry, embedded games, playgate, progress, scoring, rotation, chess, map, sudoku)
 npm run lint       # eslint
-npm run build      # production build
+npm run build      # production build (also generates dist/precache.json)
 npm run preview    # preview the production build
 ```
 
 ## Architecture
 
-- `src/lib/types.ts`, `src/lib/games.ts` — game registry and shared types
-- `src/lib/progress.ts` — localStorage-backed stage progress/star tracking
-- `src/lib/scoring.ts` — shared pass/star thresholds
-- `src/components/QuizGame.tsx` — reusable multiple-choice quiz engine used
-  by Math, Geography, Logic, Coding and Chess
-- `src/games/<game>/` — per-game stage configs and question/puzzle generators
-- `src/games/snake/` — custom grid-based game loop (not quiz-based)
+- `src/lib/types.ts`, `src/lib/games.ts`, `src/lib/registry.tsx` — game metadata, shared types, and lazy React component registry
+- `src/lib/progress.ts`, `src/lib/scoring.ts`, `src/lib/rotation.ts`, `src/lib/mathProblem.ts` — `localStorage` progress/stars, pass/star thresholds, persisted LRU rotation picker, shared arithmetic problem generator
+- `src/lib/playcode.ts`, `src/lib/playgate.ts`, `src/lib/useGate.ts` — coin gate verification, timer state, and React subscription hook
+- `src/components/` — shared UI (`HomePage`, `GameIntroPage`, `StagePlayPage`, `GameShell`, `QuizGame`, `EmbeddedGame`, `PlayGate`, `PlayTimeBar`, `CodeEntry`, `ParentPage`, `ResultModal`, `StageSelect`, `Stars`, `TimeLeft`)
+- `src/games/<game>/` — React 10-stage games (quiz-based via `QuizGame` or custom interactive loops)
+- `public/<game>/` — standalone embedded HTML/JS/Canvas/Three.js games mounted via `EmbeddedGame` iframe; all scripts are self-contained/vendored locally so they work offline
 
-Adding a new game means adding a `src/games/<id>/` folder with a component
-matching `GameComponentProps`, registering it in `src/lib/registry.tsx`, and
-adding its metadata to `src/lib/games.ts`.
+### Adding a new game
+
+- **React 10-stage game:** add `src/games/<id>/` exporting a component matching `GameComponentProps`, add its `GameId` to `src/lib/types.ts`, register its lazy import in `src/lib/registry.tsx`, and add its metadata to `src/lib/games.ts`.
+- **Standalone embedded game:** place self-contained static assets (no external script CDNs) in `public/<slug>/index.html`, add its ID to `GameId` and `EmbeddedGameId` in `src/lib/types.ts`, add its metadata with `embedSrc` and `levelsLabel` in `src/lib/games.ts`, and add registry/smoke tests in `tests/games-registry.test.ts`.

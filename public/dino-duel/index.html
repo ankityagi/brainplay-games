@@ -31,7 +31,7 @@ button:focus-visible, .card:focus-visible { outline: 3px solid var(--sun); outli
 
 /* ---------- Screens ---------- */
 .screen { position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding-block: max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-bottom, 0px)); padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); box-sizing: border-box; background: linear-gradient(180deg, rgba(21,19,43,0.25), rgba(21,19,43,0.65)); }
-.sheet { width: min(940px, 100%); padding: 24px 26px 26px; margin: auto 0; display: grid; gap: 18px; box-sizing: border-box; }
+.sheet { width: min(1040px, 100%); padding: 20px 24px 22px; margin: auto 0; display: grid; gap: 15px; box-sizing: border-box; }
 .brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
 .brand h1, h2.title { margin: 0; font-family: var(--display); font-weight: 400; line-height: 0.95; color: var(--sun); text-shadow: 0 5px 0 #c4561b; letter-spacing: 0.01em; }
 .brand h1 { font-size: clamp(46px, 9vw, 80px); }
@@ -58,13 +58,13 @@ kbd { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 5px
 .btn:disabled { opacity: 0.4; cursor: default; }
 
 /* Dino picker */
-.dinos { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
-.dino-card { position: relative; padding: 8px 10px 12px; }
-.dino-card canvas { width: 100%; aspect-ratio: 22 / 15; display: block; }
-.dino-card .nm { font-size: 20px; line-height: 1.05; }
-.dino-card .mv { font-size: 12px; font-weight: 900; color: var(--sun); }
-.stat { display: grid; grid-template-columns: 52px 1fr; gap: 6px; align-items: center; font-size: 11px; font-weight: 900; color: var(--muted); letter-spacing: 0.04em; }
-.stat i { display: block; height: 7px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.dinos { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; }
+.dino-card { position: relative; padding: 6px 8px 9px; gap: 2px; }
+.dino-card canvas { width: 100%; aspect-ratio: 22 / 13; display: block; }
+.dino-card .nm { font-size: 17px; line-height: 1.05; }
+.dino-card .mv { font-size: 11px; font-weight: 900; color: var(--sun); }
+.stat { display: grid; grid-template-columns: 44px 1fr; gap: 5px; align-items: center; font-size: 10px; font-weight: 900; color: var(--muted); letter-spacing: 0.04em; }
+.stat i { display: block; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
 .stat i b { display: block; height: 100%; border-radius: 4px; background: var(--leaf); }
 .dino-card.p1 { border-color: var(--sky); background: rgba(90,176,255,0.16); }
 .dino-card.p2 { border-color: var(--berry); background: rgba(255,92,108,0.16); }
@@ -85,6 +85,8 @@ kbd { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 5px
 .lvl .stars { font-size: 15px; letter-spacing: 2px; color: var(--sun); min-height: 18px; }
 .lvl .stars .off { color: rgba(255,255,255,0.25); }
 .lvl.locked .num { color: rgba(255,255,255,0.4); }
+.lvl.boss { border-color: rgba(255,92,108,0.55); background: rgba(255,92,108,0.12); }
+.lvl .badge { font-size: 10px; font-weight: 900; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 999px; background: var(--berry); color: #fff; }
 
 /* Result */
 .result-stars { font-size: 46px; letter-spacing: 6px; color: var(--sun); text-shadow: 0 3px 0 rgba(0,0,0,0.3); }
@@ -137,12 +139,12 @@ body.touch #tools { right: auto; left: 50%; transform: translateX(-50%); }
   <div class="sheet panel">
     <div class="brand">
       <h1>Dino Duel</h1>
-      <p>Pick a dinosaur, land your hits, climb 10 levels.</p>
+      <p>10 fast dinosaurs, 10 fierce levels. Can you beat the final boss?</p>
     </div>
     <div class="modes">
       <button class="card mode-card" id="mode1" type="button">
         <span class="nm">1 Player</span>
-        <span class="meta">Fight the computer. Each level it gets tougher.</span>
+        <span class="meta">Fight all 10 dinos. Level 10 takes near-perfect skill to win.</span>
       </button>
       <button class="card mode-card" id="mode2" type="button">
         <span class="nm">2 Players</span>
@@ -150,8 +152,8 @@ body.touch #tools { right: auto; left: 50%; transform: translateX(-50%); }
       </button>
     </div>
     <div class="how">
-      <div><b>How to win.</b> Every hit you land drains the other dino's health bar. When it runs out, that dino is knocked out. Win 2 rounds to win the fight.</div>
-      <div><b>Block</b> to stop hits. Your <b>Power</b> bar fills up as you fight. When it glows, fire your dino's super move.</div>
+      <div><b>How to win.</b> Land hits to drain the other dino's health bar. Win 2 rounds to win the fight.</div>
+      <div><b>Perfect Block.</b> Hold <b>Block</b> to stop hits — tap it right before impact for a golden <b>Perfect Block</b> (0 damage + bonus power) and counter!</div>
       <div><b>Player 1:</b> <kbd>A</kbd> <kbd>D</kbd> move, <kbd>W</kbd> jump, <kbd>S</kbd> block, <kbd>F</kbd> hit, <kbd>G</kbd> power move.</div>
       <div><b>Player 2:</b> <kbd>←</kbd> <kbd>→</kbd> move, <kbd>↑</kbd> jump, <kbd>↓</kbd> block, <kbd>K</kbd> hit, <kbd>L</kbd> power move.</div>
     </div>
@@ -215,8 +217,8 @@ body.touch #tools { right: auto; left: 50%; transform: translateX(-50%); }
    Dino Duel — an original side-view dinosaur fighting game.
    Logical arena is 1280x720, scaled to fit the window.
    ============================================================ */
-const W = 1280, H = 720, GROUND = 618, LEFT = 60, RIGHT = 1220, GRAV = 2300;
-const ROUND_TIME = 60, ROUNDS_TO_WIN = 2, POWER_FILL = 13, LEVEL_COUNT = 10;
+const W = 1280, H = 720, GROUND = 618, LEFT = 60, RIGHT = 1220, GRAV = 2900;
+const ROUND_TIME = 60, ROUNDS_TO_WIN = 2, POWER_FILL = 16, LEVEL_COUNT = 10, PERFECT_BLOCK_WIN = 0.16;
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const approach = (v, t, d) => v < t ? Math.min(t, v + d) : Math.max(t, v - d);
@@ -226,67 +228,127 @@ const rand = Math.random;
 // range = how far a move reaches, measured from the dino's own middle.
 const DINOS = {
   rex: {
-    name: 'T-Rex', type: 'biped', hp: 120, speed: 210, jump: 820, armor: 1.0, halfW: 56,
-    stats: { power: 5, speed: 2, tough: 4 },
+    name: 'T-Rex', type: 'biped', hp: 120, speed: 325, jump: 920, armor: 1.0, halfW: 56,
+    stats: { power: 5, speed: 3, tough: 4 },
     blurb: 'Huge jaws, big hits',
     pal: { body: '#ef7a3d', belly: '#ffd8a3', dark: '#b8501f', accent: '#7a3416' },
     alt: { body: '#5a8be6', belly: '#cfe0ff', dark: '#3460b0', accent: '#1f3a73' },
     art: { s: 1, bodyX: -6, bodyY: -118, bodyRx: 72, bodyRy: 47, hip: 74, legW: 26, tail: 185, tailW: 32, headX: 80, headY: -178, headW: 82, headH: 52, arm: 20, neckW: 34 },
     moves: {
-      attack: { name: 'Bite', dmg: 9, start: 0.14, act: 0.1, rec: 0.22, range: 160, kb: 260, pow: 'CHOMP!' },
-      special: { name: 'Mega Chomp', dmg: 22, start: 0.28, act: 0.14, rec: 0.4, range: 205, kb: 560, lunge: 430, pow: 'MEGA CHOMP!' },
+      attack: { name: 'Bite', dmg: 10, start: 0.1, act: 0.09, rec: 0.16, range: 162, kb: 270, pow: 'CHOMP!' },
+      special: { name: 'Mega Chomp', dmg: 23, start: 0.2, act: 0.12, rec: 0.29, range: 208, kb: 580, lunge: 590, pow: 'MEGA CHOMP!' },
     },
   },
   spino: {
-    name: 'Spinosaurus', type: 'biped', hp: 110, speed: 235, jump: 840, armor: 1.0, halfW: 58,
-    stats: { power: 4, speed: 3, tough: 3 },
+    name: 'Spinosaurus', type: 'biped', hp: 112, speed: 365, jump: 940, armor: 1.0, halfW: 58,
+    stats: { power: 4, speed: 4, tough: 3 },
     blurb: 'Long snout, sail on its back',
     pal: { body: '#2bb3a3', belly: '#c3f1e4', dark: '#1a7f74', accent: '#ff8a3d' },
     alt: { body: '#d65aa8', belly: '#f7d3ea', dark: '#9c3678', accent: '#ffd23f' },
     art: { s: 1, bodyX: -4, bodyY: -112, bodyRx: 78, bodyRy: 40, hip: 70, legW: 22, tail: 200, tailW: 28, headX: 92, headY: -170, headW: 100, headH: 32, arm: 28, neckW: 28, sail: true },
     moves: {
-      attack: { name: 'Snout Snap', dmg: 8, start: 0.12, act: 0.1, rec: 0.2, range: 178, kb: 240, pow: 'SNAP!' },
-      special: { name: 'Tail Whirl', dmg: 19, start: 0.2, act: 0.22, rec: 0.35, range: 235, kb: 520, spin: true, pow: 'WHIRL!' },
+      attack: { name: 'Snout Snap', dmg: 9, start: 0.09, act: 0.09, rec: 0.14, range: 180, kb: 245, pow: 'SNAP!' },
+      special: { name: 'Tail Whirl', dmg: 20, start: 0.15, act: 0.18, rec: 0.25, range: 238, kb: 540, spin: true, pow: 'WHIRL!' },
     },
   },
   anky: {
-    name: 'Ankylosaurus', type: 'quad', hp: 125, speed: 175, jump: 700, armor: 0.75, halfW: 82,
-    stats: { power: 4, speed: 1, tough: 5 },
+    name: 'Ankylosaurus', type: 'quad', hp: 128, speed: 290, jump: 800, armor: 0.75, halfW: 82,
+    stats: { power: 4, speed: 2, tough: 5 },
     blurb: 'Armor plates and a club tail',
     pal: { body: '#c9a03a', belly: '#f2dc9b', dark: '#8d6a1c', accent: '#6e4f1a' },
     alt: { body: '#7a8a99', belly: '#d7dee6', dark: '#4f5d6b', accent: '#2f3a45' },
     art: { s: 1, bodyX: -10, bodyY: -78, bodyRx: 100, bodyRy: 44, legLen: 40, legW: 24, tail: 150, headX: 112, headY: -62, plates: true },
     moves: {
-      attack: { name: 'Head Bonk', dmg: 8, start: 0.14, act: 0.1, rec: 0.24, range: 158, kb: 260, pow: 'BONK!' },
-      special: { name: 'Club Smash', dmg: 23, start: 0.32, act: 0.14, rec: 0.45, range: 250, kb: 600, club: true, pow: 'SMASH!' },
+      attack: { name: 'Head Bonk', dmg: 9, start: 0.09, act: 0.09, rec: 0.16, range: 174, kb: 270, pow: 'BONK!' },
+      special: { name: 'Club Smash', dmg: 24, start: 0.18, act: 0.13, rec: 0.3, range: 256, kb: 620, club: true, pow: 'SMASH!' },
     },
   },
   trike: {
-    name: 'Triceratops', type: 'quad', hp: 115, speed: 215, jump: 760, armor: 0.9, halfW: 76,
+    name: 'Triceratops', type: 'quad', hp: 118, speed: 340, jump: 850, armor: 0.88, halfW: 76,
     stats: { power: 4, speed: 3, tough: 4 },
     blurb: 'Three horns and a big frill',
     pal: { body: '#8e6bd8', belly: '#dcd0f8', dark: '#5e43a6', accent: '#ffcf4a' },
     alt: { body: '#e0574f', belly: '#ffd6cf', dark: '#a8322b', accent: '#7fe3c4' },
     art: { s: 1, bodyX: -10, bodyY: -90, bodyRx: 92, bodyRy: 50, legLen: 48, legW: 24, tail: 80, headX: 112, headY: -96, frill: true },
     moves: {
-      attack: { name: 'Horn Poke', dmg: 9, start: 0.13, act: 0.1, rec: 0.22, range: 182, kb: 280, pow: 'POKE!' },
-      special: { name: 'Horn Charge', dmg: 20, start: 0.18, act: 0.34, rec: 0.36, range: 170, kb: 600, dash: 900, pow: 'CHARGE!' },
+      attack: { name: 'Horn Poke', dmg: 9, start: 0.09, act: 0.09, rec: 0.15, range: 184, kb: 290, pow: 'POKE!' },
+      special: { name: 'Horn Charge', dmg: 21, start: 0.13, act: 0.28, rec: 0.26, range: 175, kb: 620, dash: 1140, pow: 'CHARGE!' },
     },
   },
   raptor: {
-    name: 'Velociraptor', type: 'biped', hp: 95, speed: 320, jump: 1000, armor: 1.0, halfW: 42,
+    name: 'Velociraptor', type: 'biped', hp: 96, speed: 475, jump: 1120, armor: 1.0, halfW: 42,
     stats: { power: 2, speed: 5, tough: 2 },
-    blurb: 'Super fast, jumps high',
+    blurb: 'Lightning fast, jumps high',
     pal: { body: '#62c94f', belly: '#dcf6cb', dark: '#3d8c30', accent: '#2f5e25' },
     alt: { body: '#f0a43a', belly: '#ffe6c0', dark: '#b8741c', accent: '#6b3d0c' },
     art: { s: 0.84, bodyX: -4, bodyY: -110, bodyRx: 56, bodyRy: 30, hip: 76, legW: 16, tail: 170, tailW: 19, headX: 72, headY: -162, headW: 64, headH: 30, arm: 34, neckW: 20, stripes: true, sickle: true, feathers: true },
     moves: {
-      attack: { name: 'Claw Swipe', dmg: 7, start: 0.08, act: 0.08, rec: 0.14, range: 128, kb: 200, claw: true, pow: 'SWIPE!' },
-      special: { name: 'Pounce', dmg: 17, start: 0.12, act: 0.38, rec: 0.3, range: 125, kb: 480, pounce: { vx: 720, vy: 760 }, pow: 'POUNCE!' },
+      attack: { name: 'Claw Swipe', dmg: 7, start: 0.06, act: 0.07, rec: 0.1, range: 132, kb: 210, claw: true, pow: 'SWIPE!' },
+      special: { name: 'Pounce', dmg: 18, start: 0.09, act: 0.34, rec: 0.22, range: 130, kb: 500, pounce: { vx: 920, vy: 880 }, pow: 'POUNCE!' },
+    },
+  },
+  stego: {
+    name: 'Stegosaurus', type: 'quad', hp: 124, speed: 295, jump: 800, armor: 0.82, halfW: 80,
+    stats: { power: 4, speed: 2, tough: 5 },
+    blurb: 'Tall back plates, spiked tail',
+    pal: { body: '#49a86c', belly: '#d7f2c2', dark: '#2a6f45', accent: '#f09a36' },
+    alt: { body: '#3c84c7', belly: '#cfe8ff', dark: '#245285', accent: '#ff5c8a' },
+    art: { s: 1, bodyX: -8, bodyY: -94, bodyRx: 94, bodyRy: 52, legLen: 50, legW: 23, tail: 165, headX: 114, headY: -72, backPlates: true, thago: true },
+    moves: {
+      attack: { name: 'Plate Bash', dmg: 8, start: 0.1, act: 0.09, rec: 0.16, range: 166, kb: 275, pow: 'BASH!' },
+      special: { name: 'Thagomizer', dmg: 23, start: 0.19, act: 0.14, rec: 0.29, range: 262, kb: 640, club: true, pow: 'SPIKE!' },
+    },
+  },
+  carno: {
+    name: 'Carnotaurus', type: 'biped', hp: 104, speed: 445, jump: 1020, armor: 1.0, halfW: 50,
+    stats: { power: 4, speed: 5, tough: 2 },
+    blurb: 'Bull horns, blazing speed',
+    pal: { body: '#d94040', belly: '#ffd2b8', dark: '#8c1f24', accent: '#2b1926' },
+    alt: { body: '#2c3e6b', belly: '#c6d8ff', dark: '#182442', accent: '#ffd23f' },
+    art: { s: 0.94, bodyX: -6, bodyY: -116, bodyRx: 64, bodyRy: 36, hip: 78, legW: 21, tail: 185, tailW: 24, headX: 78, headY: -172, headW: 66, headH: 42, arm: 14, neckW: 26, bullHorns: true, stripes: true },
+    moves: {
+      attack: { name: 'Horn Snap', dmg: 8, start: 0.07, act: 0.08, rec: 0.12, range: 150, kb: 235, pow: 'SNAP!' },
+      special: { name: 'Bull Rush', dmg: 20, start: 0.11, act: 0.26, rec: 0.24, range: 162, kb: 580, dash: 1240, pow: 'BULL RUSH!' },
+    },
+  },
+  pachy: {
+    name: 'Pachycephalosaurus', type: 'biped', hp: 112, speed: 395, jump: 960, armor: 0.9, halfW: 48,
+    stats: { power: 3, speed: 4, tough: 4 },
+    blurb: 'Armored dome, fierce headbutt',
+    pal: { body: '#d98a2b', belly: '#fce5b6', dark: '#945514', accent: '#ffe7b3' },
+    alt: { body: '#52b39c', belly: '#d6faf0', dark: '#2c7564', accent: '#ffe07a' },
+    art: { s: 0.9, bodyX: -6, bodyY: -108, bodyRx: 62, bodyRy: 38, hip: 74, legW: 21, tail: 165, tailW: 22, headX: 78, headY: -158, headW: 68, headH: 40, arm: 24, neckW: 25, dome: true },
+    moves: {
+      attack: { name: 'Skull Butt', dmg: 8, start: 0.08, act: 0.08, rec: 0.13, range: 152, kb: 320, pow: 'THUD!' },
+      special: { name: 'Dome Bash', dmg: 21, start: 0.13, act: 0.14, rec: 0.24, range: 192, kb: 680, lunge: 680, pow: 'DOME BASH!' },
+    },
+  },
+  theri: {
+    name: 'Therizinosaurus', type: 'biped', hp: 108, speed: 375, jump: 950, armor: 0.95, halfW: 54,
+    stats: { power: 5, speed: 4, tough: 3 },
+    blurb: 'Giant scythe claws, wild reach',
+    pal: { body: '#5c5280', belly: '#dfd8f5', dark: '#362e52', accent: '#ff705c' },
+    alt: { body: '#2f6e5c', belly: '#ccf2e4', dark: '#1c473b', accent: '#ffd23f' },
+    art: { s: 0.98, bodyX: -6, bodyY: -116, bodyRx: 66, bodyRy: 44, hip: 74, legW: 22, tail: 150, tailW: 24, headX: 74, headY: -188, headW: 56, headH: 28, arm: 42, neckW: 22, feathers: true, scythes: true },
+    moves: {
+      attack: { name: 'Scythe Slash', dmg: 9, start: 0.08, act: 0.09, rec: 0.14, range: 192, kb: 250, claw: true, pow: 'SLASH!' },
+      special: { name: 'Claw Flurry', dmg: 22, start: 0.14, act: 0.2, rec: 0.26, range: 235, kb: 540, claw: true, lunge: 480, pow: 'FLURRY!' },
+    },
+  },
+  giga: {
+    name: 'Giganotosaurus', type: 'biped', hp: 125, speed: 345, jump: 910, armor: 0.9, halfW: 60,
+    stats: { power: 5, speed: 3, tough: 5 },
+    blurb: 'Apex titan, jagged spine ridge',
+    pal: { body: '#3c524a', belly: '#c9d9c8', dark: '#21302b', accent: '#ff5247' },
+    alt: { body: '#6e345c', belly: '#f0cbe4', dark: '#421b36', accent: '#52e5ff' },
+    art: { s: 1.04, bodyX: -6, bodyY: -120, bodyRx: 76, bodyRy: 48, hip: 74, legW: 27, tail: 195, tailW: 32, headX: 84, headY: -180, headW: 90, headH: 50, arm: 24, neckW: 35, ridge: true, stripes: true },
+    moves: {
+      attack: { name: 'Titan Bite', dmg: 10, start: 0.09, act: 0.09, rec: 0.15, range: 174, kb: 290, pow: 'CRUNCH!' },
+      special: { name: 'Apex Chomp', dmg: 25, start: 0.18, act: 0.14, rec: 0.28, range: 220, kb: 640, lunge: 640, pow: 'APEX CHOMP!' },
     },
   },
 };
-const ORDER = ['rex', 'spino', 'anky', 'trike', 'raptor'];
+const ORDER = ['rex', 'spino', 'anky', 'trike', 'raptor', 'stego', 'carno', 'pachy', 'theri', 'giga'];
 
 /* ---------------- Arenas and levels ---------------- */
 const ARENAS = [
@@ -296,15 +358,27 @@ const ARENAS = [
   { name: 'Frosty Valley', sky: ['#9fc6ef', '#eef6ff'], far: '#c7d8ea', mid: '#8fa9c7', ground: '#e8f1fb', top: '#ffffff', props: 'snow' },
   { name: 'Volcano Rim', sky: ['#3b2155', '#ff8a5c'], far: '#5a3b5e', mid: '#3a2a3e', ground: '#2e2530', top: '#4a3a46', props: 'volcano' },
 ];
-const LEVEL_OPP = ['raptor', 'trike', 'spino', 'anky', 'rex', 'raptor', 'trike', 'spino', 'anky', 'rex'];
-const LEVELS = LEVEL_OPP.map((opp, i) => ({ n: i + 1, opp, arena: i % ARENAS.length }));
+const LEVEL_OPP = ['pachy', 'raptor', 'trike', 'stego', 'spino', 'carno', 'anky', 'theri', 'rex', 'giga'];
+const LEVELS = LEVEL_OPP.map((opp, i) => ({ n: i + 1, opp, arena: i % ARENAS.length, boss: i === LEVEL_COUNT - 1 }));
 
 function aiFor(level) {
   const k = (level - 1) / (LEVEL_COUNT - 1);
+  const boss = level >= LEVEL_COUNT ? 1 : 0;
   return {
-    think: 0.62 - 0.42 * k, aggr: 0.32 + 0.58 * k, block: 0.04 + 0.62 * k, spec: 0.3 + 0.65 * k,
-    dmg: 0.7 + 0.45 * k, hp: 0.85 + 0.35 * k, jump: 0.04 + 0.06 * k,
-    t: 0.4, blockFor: 0, seen: 0,
+    level,
+    think: Math.max(0.045, 0.36 - 0.29 * k - 0.025 * boss),
+    aggr: Math.min(0.97, 0.52 + 0.42 * k + 0.03 * boss),
+    block: Math.min(0.89, 0.18 + 0.65 * k + 0.06 * boss),
+    punish: Math.min(0.96, 0.16 + 0.72 * k + 0.08 * boss),
+    dodge: Math.min(0.7, 0.08 + 0.52 * k + 0.1 * boss),
+    spec: Math.min(0.98, 0.45 + 0.49 * k + 0.04 * boss),
+    dmg: 0.86 + 0.6 * k + 0.22 * boss,
+    hp: 0.95 + 0.48 * k + 0.18 * boss,
+    speed: 0.95 + 0.2 * k + 0.06 * boss,
+    meter: 0.95 + 0.33 * k + 0.12 * boss,
+    rec: 1.0 - 0.15 * k - 0.05 * boss,
+    jump: 0.06 + 0.12 * k + 0.04 * boss,
+    t: 0.25, blockFor: 0, seen: 0, justBlocked: false, justHit: false,
   };
 }
 
@@ -346,7 +420,7 @@ const Sound = {
     s.buffer = buf; s.connect(f); f.connect(g); g.connect(ctx.destination); s.start();
   },
   hit(big) { this.noise(big ? 0.25 : 0.12, big ? 0.35 : 0.22, big ? 900 : 1600); this.tone(big ? 110 : 170, big ? 0.25 : 0.12, 'square', 0.12, 50); },
-  block() { this.tone(880, 0.08, 'triangle', 0.12, 660); },
+  block(perfect) { this.tone(perfect ? 1320 : 880, perfect ? 0.14 : 0.08, 'triangle', perfect ? 0.18 : 0.12, perfect ? 1760 : 660); },
   whoosh() { this.noise(0.12, 0.08, 3000); },
   roar() { this.tone(220, 0.45, 'sawtooth', 0.09, 70); this.noise(0.4, 0.1, 700); },
   ko() { this.tone(440, 0.7, 'square', 0.1, 60); },
@@ -394,7 +468,8 @@ function makeFighter(kind, side, palAlt) {
     kind, d, side, pal: palAlt ? d.alt : d.pal,
     x: side === 0 ? 420 : 860, y: GROUND, vx: 0, vy: 0, facing: side === 0 ? 1 : -1, grounded: true,
     hp: d.hp, maxHp: d.hp, hpLag: d.hp, meter: 30, state: 'idle', stateT: 0, move: null, moveName: '', moveT: 0, moveId: 0,
-    hitDone: false, pounced: false, flash: 0, walk: 0, dmgScale: 1, inp: side === 0 ? humanIn[0] : humanIn[1], meterFlash: 0,
+    hitDone: false, pounced: false, flash: 0, walk: 0, dmgScale: 1, speedScale: 1, meterScale: 1, recScale: 1, blockAge: 0,
+    inp: side === 0 ? humanIn[0] : humanIn[1], meterFlash: 0,
   };
 }
 
@@ -419,12 +494,15 @@ function newRound() {
     b.inp = blankInput();
     b.maxHp = b.hp = b.hpLag = Math.round(b.d.hp * G.ai.hp);
     b.dmgScale = G.ai.dmg;
-    G.ai.t = 0.6; G.ai.blockFor = 0;
+    b.speedScale = G.ai.speed;
+    b.meterScale = G.ai.meter;
+    b.recScale = G.ai.rec;
+    G.ai.t = 0.25; G.ai.blockFor = 0; G.ai.seen = 0; G.ai.justBlocked = false; G.ai.justHit = false;
   }
   for (const k of ['left', 'right', 'block']) { humanIn[0][k] = false; humanIn[1][k] = false; }
   G.fighters = [a, b];
   G.timer = ROUND_TIME; G.phase = 'intro'; G.t = 0; G.effects = []; G.roundWinner = -1;
-  setBanner('Round ' + G.round, 1.0, 'cool');
+  setBanner(G.mode === '1p' && G.level === LEVEL_COUNT && G.round === 1 ? 'FINAL BOSS' : 'Round ' + G.round, 0.9, G.level === LEVEL_COUNT && G.mode === '1p' ? 'warn' : 'cool');
   Sound.beep(false);
 }
 
@@ -441,35 +519,35 @@ function updateFighter(f, opp, dt, canAct) {
   const inp = f.inp;
   inp.jumpBuf = Math.max(0, inp.jumpBuf - dt); inp.atkBuf = Math.max(0, inp.atkBuf - dt); inp.spBuf = Math.max(0, inp.spBuf - dt);
   f.flash = Math.max(0, f.flash - dt); f.meterFlash = Math.max(0, f.meterFlash - dt);
-  f.hpLag = approach(f.hpLag, f.hp, (f.hpLag - f.hp > 0 ? 40 : 200) * dt);
-  if (canAct) f.meter = Math.min(100, f.meter + POWER_FILL * dt);
+  f.hpLag = approach(f.hpLag, f.hp, (f.hpLag - f.hp > 0 ? 52 : 220) * dt);
+  if (canAct) f.meter = Math.min(100, f.meter + POWER_FILL * f.meterScale * dt);
 
   const st = f.state;
   if (st === 'attack' || st === 'special') {
     f.moveT += dt;
-    const mv = f.move, s = mv.start, a = s + mv.act, e = a + mv.rec;
+    const mv = f.move, s = mv.start, a = s + mv.act, e = a + mv.rec * f.recScale;
     if (mv.lunge) {
-      if (f.moveT < a) f.vx = f.facing * mv.lunge * (f.moveT < s ? 0.15 : 1);
-      else f.vx = approach(f.vx, 0, 3000 * dt);
+      if (f.moveT < a) f.vx = f.facing * mv.lunge * f.speedScale * (f.moveT < s ? 0.18 : 1);
+      else f.vx = approach(f.vx, 0, 3600 * dt);
     } else if (mv.dash) {
-      if (f.moveT >= s && f.moveT < a && !f.hitDone) { f.vx = f.facing * mv.dash; if (rand() < 0.6) dust(f.x - f.facing * f.d.halfW, f.y); }
-      else f.vx = approach(f.vx, 0, 3200 * dt);
+      if (f.moveT >= s && f.moveT < a && !f.hitDone) { f.vx = f.facing * mv.dash * f.speedScale; if (rand() < 0.65) dust(f.x - f.facing * f.d.halfW, f.y); }
+      else f.vx = approach(f.vx, 0, 3800 * dt);
     } else if (mv.pounce) {
-      if (!f.pounced && f.moveT >= s) { f.pounced = true; f.vy = -mv.pounce.vy; f.vx = f.facing * mv.pounce.vx; f.grounded = false; }
-      if (f.grounded && f.pounced) f.vx = approach(f.vx, 0, 3000 * dt);
+      if (!f.pounced && f.moveT >= s) { f.pounced = true; f.vy = -mv.pounce.vy; f.vx = f.facing * mv.pounce.vx * f.speedScale; f.grounded = false; }
+      if (f.grounded && f.pounced) f.vx = approach(f.vx, 0, 3600 * dt);
     } else if (f.grounded) {
-      f.vx = approach(f.vx, 0, 2600 * dt);
+      f.vx = approach(f.vx, 0, 3200 * dt);
     }
-    const activeEnd = mv.pounce ? a + 0.5 : a;
+    const activeEnd = mv.pounce ? a + 0.45 : a;
     if (!f.hitDone && f.moveT >= s && f.moveT < activeEnd && (!mv.pounce || !f.grounded || f.moveT < a)) tryHit(f, opp, mv);
     if (f.moveT >= e && (f.grounded || !mv.pounce)) { f.state = f.grounded ? 'idle' : 'jump'; f.move = null; }
   } else if (st === 'hurt') {
     f.stateT -= dt;
-    if (f.grounded) f.vx = approach(f.vx, 0, 1300 * dt);
+    if (f.grounded) f.vx = approach(f.vx, 0, 1600 * dt);
     if (f.stateT <= 0 && f.grounded) f.state = 'idle';
   } else if (st === 'ko' || st === 'win') {
-    if (f.grounded) f.vx = approach(f.vx, 0, 1500 * dt);
-    if (st === 'win' && f.grounded && rand() < dt * 1.2) { f.vy = -520; f.grounded = false; }
+    if (f.grounded) f.vx = approach(f.vx, 0, 1700 * dt);
+    if (st === 'win' && f.grounded && rand() < dt * 1.4) { f.vy = -580; f.grounded = false; }
   } else if (canAct) {
     // idle / walk / jump / block
     if (inp.spBuf > 0) {
@@ -482,17 +560,20 @@ function updateFighter(f, opp, dt, canAct) {
       inp.jumpBuf = 0; f.vy = -f.d.jump; f.grounded = false; f.state = 'jump';
     }
     const dir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
+    const spd = f.d.speed * f.speedScale;
     if (inp.block && f.grounded) {
-      f.state = 'block'; f.vx = approach(f.vx, 0, 3000 * dt);
+      if (f.state !== 'block') f.blockAge = 0;
+      else f.blockAge += dt;
+      f.state = 'block'; f.vx = approach(f.vx, 0, 3600 * dt);
     } else if (f.grounded) {
-      f.vx = dir * f.d.speed;
+      f.vx = dir * spd;
       f.state = dir !== 0 ? 'walk' : 'idle';
     } else {
-      f.vx = approach(f.vx, dir * f.d.speed, 1600 * dt);
+      f.vx = approach(f.vx, dir * spd, 2600 * dt);
       f.state = 'jump';
     }
   } else if (f.grounded) {
-    f.vx = approach(f.vx, 0, 2000 * dt);
+    f.vx = approach(f.vx, 0, 2400 * dt);
     if (st === 'walk' || st === 'block' || st === 'jump') f.state = 'idle';
   }
   physics(f, dt);
@@ -509,13 +590,13 @@ function physics(f, dt) {
     }
   }
   f.x = clamp(f.x, LEFT + f.d.halfW, RIGHT - f.d.halfW);
-  if (Math.abs(f.vx) > 30 && f.grounded) f.walk += f.vx * f.facing * dt * 0.045;
-  else if (f.state === 'walk') f.walk += dt * 6;
+  if (Math.abs(f.vx) > 30 && f.grounded) f.walk += f.vx * f.facing * dt * 0.036;
+  else if (f.state === 'walk') f.walk += dt * 7;
 }
 
 function faceEachOther(a, b) {
   for (const [f, o] of [[a, b], [b, a]]) {
-    const free = f.state === 'idle' || f.state === 'walk' || f.state === 'block' || (f.state === 'jump' && f.grounded);
+    const free = f.state === 'idle' || f.state === 'walk' || (f.state === 'block' && o.grounded) || (f.state === 'jump' && f.grounded);
     if (free && f.grounded && Math.abs(o.x - f.x) > 6) f.facing = o.x > f.x ? 1 : -1;
   }
 }
@@ -531,7 +612,7 @@ function separate(a, b) {
   const left = Math.abs(b.x - a.x);
   if (left < minD) { // one is pinned to a wall: move the other one
     if (a.x <= LEFT + a.d.halfW + 0.5 || a.x >= RIGHT - a.d.halfW - 0.5) b.x = clamp(a.x + s * minD, LEFT + b.d.halfW, RIGHT - b.d.halfW);
-    else a.x = clamp(b.x - s * minD, LEFT + a.d.halfW, RIGHT - a.d.halfW);
+    else a.x = clamp(b.x - s * minD, LEFT + a.d.halfW, RIGHT - b.d.halfW);
   }
 }
 
@@ -547,21 +628,33 @@ function tryHit(a, b, mv) {
   const cy = Math.min(a.y, b.y) - 110;
   const blocking = b.state === 'block' && b.facing === -a.facing;
   if (blocking) {
-    const chip = big ? mv.dmg * 0.2 * b.d.armor * a.dmgScale : 0;
+    const isAiDef = !!(G.ai && b.side === 1);
+    const perfect = !isAiDef && b.blockAge <= PERFECT_BLOCK_WIN;
+    const chip = perfect ? 0 : big ? mv.dmg * 0.25 * b.d.armor * a.dmgScale : 0;
     b.hp = Math.max(1, b.hp - chip);
-    b.vx = a.facing * (big ? 360 : 200);
-    b.meter = Math.min(100, b.meter + 6);
-    pow(cx, cy, 'BLOCK!', '#7fd3ff', false);
-    Sound.block();
+    b.vx = a.facing * (perfect ? (big ? 110 : 50) : (big ? 380 : 210));
+    b.meter = Math.min(100, b.meter + (perfect ? 16 : 6) * b.meterScale);
+    if (perfect) {
+      a.state = 'hurt'; a.stateT = big ? 0.38 : 0.28; a.move = null;
+      a.vx = -a.facing * 110;
+      G.shake = Math.max(G.shake, 7);
+      sparks(cx, cy, 12);
+      pow(cx, cy, 'PERFECT!', '#ffd23f', false);
+    } else {
+      pow(cx, cy, 'BLOCK!', '#7fd3ff', false);
+    }
+    if (isAiDef) G.ai.justBlocked = true;
+    Sound.block(perfect);
     return;
   }
   const dmg = mv.dmg * b.d.armor * a.dmgScale;
   b.hp = Math.max(0, b.hp - dmg);
-  b.state = 'hurt'; b.stateT = big ? 0.5 : 0.3; b.move = null;
+  b.state = 'hurt'; b.stateT = big ? 0.44 : 0.26; b.move = null;
   b.vx = a.facing * mv.kb; b.flash = 0.16;
-  if (big || !b.grounded) { b.vy = big ? -380 : Math.min(b.vy, -120); b.grounded = false; }
-  a.meter = Math.min(100, a.meter + 10); b.meter = Math.min(100, b.meter + 6);
+  if (big || !b.grounded) { b.vy = big ? -410 : Math.min(b.vy, -130); b.grounded = false; }
+  a.meter = Math.min(100, a.meter + 10 * a.meterScale); b.meter = Math.min(100, b.meter + 6 * b.meterScale);
   if (mv.dash || mv.pounce) { a.vx = -a.facing * 120; }
+  if (G.ai && a.side === 1) G.ai.justHit = true;
   pow(cx, cy, mv.pow, big ? '#ffd23f' : '#ffffff', big);
   sparks(cx, cy, big ? 16 : 8);
   G.shake = Math.max(G.shake, big ? 14 : 6);
@@ -574,9 +667,9 @@ function knockOut(a, b) {
   G.roundWinner = a.side; G.phase = 'roundEnd'; G.t = 0;
   G.wins[a.side]++;
   if (G.mode === '1p' && a.side === 1) G.lostRounds++;
-  setBanner('K.O.!', 1.4, 'warn');
+  setBanner('K.O.!', 1.3, 'warn');
   Sound.ko();
-  setTimeout(() => { if (G.phase === 'roundEnd' && a.state !== 'ko') a.state = 'win'; }, 700);
+  setTimeout(() => { if (G.phase === 'roundEnd' && a.state !== 'ko') a.state = 'win'; }, 600);
 }
 
 function timeUp() {
@@ -588,40 +681,111 @@ function timeUp() {
   G.roundWinner = w; G.wins[w]++;
   if (G.mode === '1p' && w === 1) G.lostRounds++;
   G.fighters[w].state = 'win';
-  setBanner('Time!', 1.4, 'warn');
+  setBanner('Time!', 1.3, 'warn');
   Sound.ko();
 }
 
 /* ---------------- Computer opponent ---------------- */
 function runAI(ai, me, foe, dt) {
   const inp = me.inp;
-  if ((foe.state === 'attack' || foe.state === 'special') && foe.moveId !== ai.seen) {
-    ai.seen = foe.moveId;
-    const reach = foe.move.range + me.d.halfW + 50;
-    if (Math.abs(foe.x - me.x) < reach && rand() < ai.block) ai.blockFor = foe.move.start + foe.move.act + 0.1;
+  const dx = foe.x - me.x, dir = dx >= 0 ? 1 : -1, dist = Math.abs(dx);
+  const sp = me.d.moves.special;
+  const atkR = me.d.moves.attack.range + foe.d.halfW - 10;
+  const spR = sp.range + foe.d.halfW + (sp.dash ? 340 : sp.pounce ? 360 : sp.lunge ? 160 : 0) - 10;
+
+  // Immediate counter-punish right after blocking a hit
+  if (ai.justBlocked) {
+    ai.justBlocked = false;
+    ai.blockFor = 0;
+    inp.block = false;
+    if (rand() < ai.punish) {
+      ai.t = 0;
+      if (me.meter >= 100 && dist < spR && rand() < ai.spec) { inp.spBuf = 0.2; return; }
+      if (dist <= atkR + 28) { inp.atkBuf = 0.2; return; }
+    }
   }
-  if (ai.blockFor > 0) { ai.blockFor -= dt; inp.left = inp.right = false; inp.block = true; return; }
+  if (ai.justHit) {
+    ai.justHit = false;
+    if (me.meter >= 100 && dist < spR && rand() < ai.spec) { ai.t = 0; inp.spBuf = 0.2; return; }
+  }
+
+  // React to incoming player attacks & specials (including dash/pounce/lunge threat range)
+  if ((foe.state === 'attack' || foe.state === 'special') && foe.move && foe.moveId !== ai.seen) {
+    ai.seen = foe.moveId;
+    const fmv = foe.move;
+    const extra = fmv.dash ? 340 : fmv.pounce ? 360 : fmv.lunge ? 160 : 0;
+    const reach = fmv.range + me.d.halfW + extra + 36;
+    const facingMe = (foe.x < me.x && foe.facing > 0) || (foe.x > me.x && foe.facing < 0);
+    if (dist < reach && facingMe) {
+      if ((fmv.dash || fmv.lunge) && me.grounded && rand() < ai.dodge * 0.6) {
+        inp.block = false;
+        inp.jumpBuf = 0.18;
+        inp.left = dir < 0; inp.right = dir > 0;
+        ai.t = 0.12;
+        return;
+      }
+      // Cross-ups (airborne foe) are slightly harder to block on reaction
+      const blkChance = foe.grounded ? ai.block : ai.block * 0.72;
+      if (rand() < blkChance) {
+        ai.blockFor = fmv.start + fmv.act + 0.05;
+      }
+    }
+  }
+
+  // Whiff punish: if player missed and is in recovery, strike immediately!
+  if ((foe.state === 'attack' || foe.state === 'special') && foe.move && !foe.hitDone) {
+    const activeEnd = foe.move.start + foe.move.act;
+    if (foe.moveT > activeEnd && ai.blockFor <= 0 && rand() < ai.punish * dt * 12) {
+      ai.t = 0;
+    }
+  }
+
+  if (ai.blockFor > 0) {
+    ai.blockFor -= dt;
+    inp.left = inp.right = false;
+    inp.block = true;
+    return;
+  }
   inp.block = false;
   ai.t -= dt;
   if (ai.t > 0) return;
-  ai.t = ai.think * (0.6 + rand() * 0.8);
-  const dx = foe.x - me.x, dir = dx >= 0 ? 1 : -1, dist = Math.abs(dx);
-  const sp = me.d.moves.special;
-  const atkR = me.d.moves.attack.range + foe.d.halfW - 12;
-  const spR = sp.range + foe.d.halfW + (sp.dash ? 280 : sp.pounce ? 320 : sp.lunge ? 120 : 0) - 12;
+  ai.t = ai.think * (0.65 + rand() * 0.7);
   inp.left = inp.right = false;
   if (foe.state === 'ko') return;
-  if (me.meter >= 100 && dist < spR && rand() < ai.spec) { inp.spBuf = 0.2; return; }
-  if (dist <= atkR) {
-    const r = rand();
-    if (r < ai.aggr) inp.atkBuf = 0.2;
-    else if (r < ai.aggr + 0.12) ai.blockFor = 0.25 + rand() * 0.35;
-    else if (r < ai.aggr + 0.3) { if (dir > 0) inp.left = true; else inp.right = true; }
+
+  // Fire special when ready and in range (prefer unblocked or close chip/punish)
+  if (me.meter >= 100 && dist < spR && rand() < ai.spec) {
+    if (foe.state !== 'block' || dist < atkR + 70 || rand() < 0.45) {
+      inp.spBuf = 0.2;
+      return;
+    }
+  }
+
+  // Anti-turtle: jump over a player who sits in block, or apply pressure
+  if (foe.state === 'block' && dist < atkR + 40 && me.grounded && rand() < ai.dodge * 0.65) {
+    inp.jumpBuf = 0.2;
+    if (dir > 0) inp.right = true; else inp.left = true;
     return;
   }
-  if (rand() < ai.aggr + 0.3) { if (dir > 0) inp.right = true; else inp.left = true; }
-  const nearWall = me.x < LEFT + me.d.halfW + 40 || me.x > RIGHT - me.d.halfW - 40;
-  if (rand() < ai.jump || (nearWall && dist < atkR + 60 && rand() < 0.25)) inp.jumpBuf = 0.2;
+
+  if (dist <= atkR) {
+    const r = rand();
+    if (r < ai.aggr) {
+      inp.atkBuf = 0.2;
+    } else if (r < ai.aggr + 0.14) {
+      ai.blockFor = 0.16 + rand() * 0.2;
+    } else {
+      // quick footsie step back to bait a whiff
+      if (dir > 0) inp.left = true; else inp.right = true;
+    }
+    return;
+  }
+
+  if (rand() < ai.aggr + 0.34) {
+    if (dir > 0) inp.right = true; else inp.left = true;
+  }
+  const nearWall = me.x < LEFT + me.d.halfW + 50 || me.x > RIGHT - me.d.halfW - 50;
+  if (rand() < ai.jump || (nearWall && dist < atkR + 90 && rand() < 0.45)) inp.jumpBuf = 0.2;
 }
 
 /* ---------------- Main update ---------------- */
@@ -634,10 +798,10 @@ function update(dt) {
   const [a, b] = G.fighters;
   if (G.phase === 'intro') {
     G.t += dt;
-    if (G.t > 1.0 && G.t - dt <= 1.0) { setBanner('FIGHT!', 0.8, ''); Sound.beep(true); }
+    if (G.t > 0.85 && G.t - dt <= 0.85) { setBanner('FIGHT!', 0.7, ''); Sound.beep(true); }
     updateFighter(a, b, dt, false); updateFighter(b, a, dt, false);
     faceEachOther(a, b);
-    if (G.t >= 1.6) G.phase = 'fight';
+    if (G.t >= 1.35) G.phase = 'fight';
     return;
   }
   if (G.phase === 'fight') {
@@ -652,7 +816,7 @@ function update(dt) {
   if (G.phase === 'roundEnd') {
     G.t += dt;
     updateFighter(a, b, dt, false); updateFighter(b, a, dt, false); separate(a, b);
-    if (G.t >= 2.8) {
+    if (G.t >= 2.2) {
       const w = G.wins[0] >= ROUNDS_TO_WIN ? 0 : G.wins[1] >= ROUNDS_TO_WIN ? 1 : -1;
       if (w >= 0) endMatch(w);
       else { G.round++; newRound(); }
@@ -950,7 +1114,8 @@ function head(c, hx, hy, hw, hh, jaw, pal, opts) {
 
 function drawBiped(c, kind, a, pal, P) {
   const hipY = -a.hip, ph = P.walk * 1.0;
-  const lean = (P.special && kind === 'rex' ? 0.12 * P.lunge : 0) + (P.hurt ? -0.08 : 0);
+  const heavyBite = kind === 'rex' || kind === 'giga';
+  const lean = (P.special && (heavyBite || kind === 'pachy') ? 0.14 * P.lunge : 0) + (P.tilt > 0 ? P.tilt * 0.7 : 0) + (P.hurt ? -0.08 : 0);
   c.save(); c.rotate(lean);
   // back leg
   bLeg(c, a.bodyX - 6, hipY, a.legW, ph + Math.PI, P.amt, pal.dark, '#f4f1e8', P.air, false);
@@ -971,6 +1136,15 @@ function drawBiped(c, kind, a, pal, P) {
     c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = 3;
     for (let i = 1; i < 7; i++) { const x = sx0 + (sx1 - sx0) * i / 7; c.beginPath(); c.moveTo(x, sy + 4); c.lineTo(x + 2, sy - 70 * Math.sin(Math.PI * i / 7)); c.stroke(); }
   }
+  // jagged dorsal ridge (Giganotosaurus)
+  if (a.ridge) {
+    c.fillStyle = pal.accent;
+    for (let i = 0; i < 8; i++) {
+      const rx = a.bodyX - 78 + i * 20, ry = a.bodyY - a.bodyRy * (0.72 + Math.sin(i * 0.45) * 0.22);
+      const h = 15 + (i % 2) * 7;
+      c.beginPath(); c.moveTo(rx - 9, ry + 8); c.lineTo(rx - 2, ry - h); c.lineTo(rx + 8, ry + 6); c.closePath(); c.fill();
+    }
+  }
   // back arm
   arm(c, a, pal.dark, P, -6);
   // body
@@ -982,13 +1156,38 @@ function drawBiped(c, kind, a, pal, P) {
   // front leg
   bLeg(c, a.bodyX + 8, hipY, a.legW, ph, P.amt, pal.body, '#ffffff', P.air || (P.special && a.sickle), a.sickle);
   // neck + head
-  const lungeX = P.lunge * (P.special ? (kind === 'rex' ? 44 : 30) : 22), lungeY = P.lunge * (kind === 'rex' ? 6 : 4);
+  const lungeX = P.lunge * (P.special ? (heavyBite || kind === 'pachy' ? 44 : 30) : 22), lungeY = P.lunge * (heavyBite || kind === 'pachy' ? 8 : 4);
   const hx = a.headX + lungeX, hy = a.headY + lungeY + (P.hurt ? -6 : 0) + (P.ko ? 18 : 0);
   c.strokeStyle = pal.body; c.lineWidth = a.neckW; c.lineCap = 'round';
   c.beginPath(); c.moveTo(a.bodyX + a.bodyRx * 0.55, a.bodyY - a.bodyRy * 0.35); c.quadraticCurveTo(a.headX - a.headW * 0.25, a.bodyY - a.bodyRy * 0.9, hx - a.headW * 0.3, hy); c.stroke();
   if (a.feathers) { c.strokeStyle = pal.accent; c.lineWidth = 4; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(hx - a.headW * 0.42, hy - a.headH * 0.3 + i * 4); c.lineTo(hx - a.headW * 0.42 - 16, hy - a.headH * 0.6 + i * 8); c.stroke(); } }
-  head(c, hx, hy, a.headW, a.headH, P.jaw, pal, { wide: P.special && kind === 'rex' ? 0.95 : 0.6, eyeBack: kind === 'spino' ? 0.3 : 0.16, ko: P.ko });
+  head(c, hx, hy, a.headW, a.headH, P.jaw, pal, { wide: P.special && heavyBite ? 0.95 : 0.6, eyeBack: kind === 'spino' ? 0.3 : 0.16, ko: P.ko });
   if (kind === 'spino') { c.fillStyle = pal.dark; ell(c, hx - a.headW * 0.15, hy - a.headH * 0.5, 10, 6); c.fill(); }
+  // bull horns (Carnotaurus)
+  if (a.bullHorns) {
+    c.fillStyle = '#f4ecd4';
+    for (const off of [-8, 4]) {
+      c.beginPath();
+      c.moveTo(hx - a.headW * 0.2 + off, hy - a.headH * 0.42);
+      c.lineTo(hx - a.headW * 0.05 + off + 14, hy - a.headH * 1.15);
+      c.lineTo(hx - a.headW * 0.02 + off, hy - a.headH * 0.36);
+      c.closePath(); c.fill();
+    }
+  }
+  // thick skull dome (Pachycephalosaurus)
+  if (a.dome) {
+    c.fillStyle = pal.accent;
+    ell(c, hx - 4, hy - a.headH * 0.48, a.headW * 0.44, a.headH * 0.58, -0.08); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.35)';
+    ell(c, hx + 4, hy - a.headH * 0.65, a.headW * 0.2, a.headH * 0.2, -0.15); c.fill();
+    c.fillStyle = '#f4ecd4';
+    for (let i = 0; i < 4; i++) { ell(c, hx - a.headW * 0.42 + i * 10, hy - a.headH * 0.18 - i * 3, 4.5, 4.5); c.fill(); }
+  }
+  // brow crest for Giga
+  if (a.ridge) {
+    c.fillStyle = pal.accent;
+    c.beginPath(); c.moveTo(hx - a.headW * 0.38, hy - a.headH * 0.45); c.lineTo(hx - a.headW * 0.05, hy - a.headH * 0.72); c.lineTo(hx + a.headW * 0.22, hy - a.headH * 0.44); c.closePath(); c.fill();
+  }
   // front arm
   arm(c, a, pal.body, P, 6);
   c.restore();
@@ -1001,6 +1200,19 @@ function arm(c, a, col, P, off) {
   const hx = ex + a.arm * 0.4 + reach * a.arm * 0.7, hy = ey + a.arm * 0.2 - reach * a.arm * 0.5;
   c.strokeStyle = col; c.lineWidth = Math.max(7, a.legW * 0.45); c.lineCap = 'round';
   c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.lineTo(hx, hy); c.stroke();
+  if (a.scythes) {
+    // giant curved scythe claws (Therizinosaurus)
+    c.strokeStyle = '#fff7df'; c.lineWidth = 4.5; c.lineCap = 'round';
+    const spread = 1 + reach * 0.45;
+    for (let i = 0; i < 3; i++) {
+      const ang = -0.35 + i * 0.36;
+      const len = (38 + reach * 16) * (i === 1 ? 1.12 : 0.94);
+      const cx1 = hx + Math.cos(ang) * len * 0.6 * spread, cy1 = hy + Math.sin(ang) * len * 0.5;
+      const tipX = hx + Math.cos(ang + 0.35) * len * spread, tipY = hy + Math.sin(ang + 0.45) * len + 10;
+      c.beginPath(); c.moveTo(hx, hy); c.quadraticCurveTo(cx1, cy1, tipX, tipY); c.stroke();
+    }
+    return;
+  }
   c.strokeStyle = '#ffffff'; c.lineWidth = 3;
   for (let i = 0; i < 2; i++) { c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + 7, hy + 4 + i * 5); c.stroke(); }
 }
@@ -1028,7 +1240,25 @@ function drawQuad(c, kind, a, pal, P) {
     c.fillStyle = pal.accent; ell(c, -a.tail - 6, 6, 26, 20); c.fill(); ell(c, -a.tail + 14, 6, 16, 14); c.fill();
     c.fillStyle = 'rgba(255,255,255,0.25)'; ell(c, -a.tail - 12, -2, 9, 6); c.fill();
   }
+  if (a.thago) {
+    // 4 sharp thagomizer spikes (Stegosaurus)
+    c.fillStyle = '#f4ecd4';
+    for (const [tx, ty, dx, dy] of [[-a.tail + 28, -2, -16, -34], [-a.tail + 8, 2, -24, -30], [-a.tail + 24, 14, -14, 28], [-a.tail + 4, 12, -24, 24]]) {
+      c.beginPath(); c.moveTo(tx - 6, ty); c.lineTo(tx + dx, ty + dy); c.lineTo(tx + 6, ty); c.closePath(); c.fill();
+    }
+  }
   c.restore();
+  // tall diamond dorsal plates (Stegosaurus)
+  if (a.backPlates) {
+    const specs = [[-74, -12, 26, 30], [-42, -32, 34, 44], [-6, -40, 38, 50], [32, -32, 32, 42], [66, -16, 24, 28]];
+    for (const [ox, oy, pw, ph2] of specs) {
+      const bx = a.bodyX + ox, by = a.bodyY - a.bodyRy * 0.52 + oy * 0.4;
+      c.fillStyle = pal.dark;
+      c.beginPath(); c.moveTo(bx - pw * 0.45 - 6, by + 10); c.lineTo(bx - 6, by - ph2 * 0.85); c.lineTo(bx + pw * 0.45 - 6, by + 10); c.closePath(); c.fill();
+      c.fillStyle = pal.accent;
+      c.beginPath(); c.moveTo(bx - pw * 0.5, by + 12); c.lineTo(bx - pw * 0.35, by - ph2 * 0.45); c.lineTo(bx, by - ph2); c.lineTo(bx + pw * 0.35, by - ph2 * 0.45); c.lineTo(bx + pw * 0.5, by + 12); c.closePath(); c.fill();
+    }
+  }
   // frill behind head (trike)
   const tilt = P.tilt, hx0 = a.headX + P.lunge * 22, hy0 = a.headY + (P.ko ? 16 : 0);
   if (kind === 'trike') {
@@ -1065,6 +1295,13 @@ function drawQuad(c, kind, a, pal, P) {
     c.fillStyle = pal.dark; c.beginPath(); c.moveTo(48, 0); c.lineTo(72, 12); c.lineTo(48, 24); c.closePath(); c.fill();
     c.fillStyle = '#4a2340'; if (P.jaw > 0.2) { ell(c, 40, 22, 14, 6 * P.jaw); c.fill(); }
     eyeQ(c, 8, -6, 9, pal, P.ko);
+  } else if (kind === 'stego') {
+    c.strokeStyle = pal.body; c.lineWidth = 22; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-36, -6); c.lineTo(-4, 2); c.stroke();
+    c.fillStyle = pal.body; ell(c, 4, 2, 30, 18); c.fill(); ell(c, 24, 6, 18, 12); c.fill();
+    c.fillStyle = pal.dark; c.beginPath(); c.moveTo(32, 0); c.lineTo(48, 8); c.lineTo(32, 16); c.closePath(); c.fill();
+    if (P.jaw > 0.2) { c.fillStyle = '#4a2340'; ell(c, 26, 15, 10, 4 * P.jaw); c.fill(); }
+    eyeQ(c, 8, -3, 7, pal, P.ko);
   } else {
     c.fillStyle = pal.body; ell(c, 0, 0, 38, 24); c.fill(); ell(c, 26, 6, 22, 16); c.fill();
     c.fillStyle = pal.accent; ell(c, -10, -18, 18, 9); c.fill();
@@ -1151,8 +1388,8 @@ function drawHud(c) {
   c.font = '38px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillStyle = G.timer < 10 ? '#ff5c6c' : '#ffffff'; c.fillText(String(Math.ceil(G.timer)), W / 2, 48);
   c.font = '16px ' + FONT; c.lineWidth = 4; c.strokeStyle = 'rgba(20,18,44,0.85)';
-  const sub = (G.mode === '1p' ? 'LEVEL ' + G.level + ' · ' : '') + ARENAS[G.arena].name.toUpperCase();
-  c.strokeText(sub, W / 2, 98); c.fillStyle = '#ffffff'; c.fillText(sub, W / 2, 98);
+  const sub = (G.mode === '1p' ? (G.level === LEVEL_COUNT ? 'LEVEL 10 BOSS · ' : 'LEVEL ' + G.level + ' · ') : '') + ARENAS[G.arena].name.toUpperCase();
+  c.strokeText(sub, W / 2, 98); c.fillStyle = G.mode === '1p' && G.level === LEVEL_COUNT ? '#ffd23f' : '#ffffff'; c.fillText(sub, W / 2, 98);
 }
 
 function drawBanner(c) {
@@ -1225,11 +1462,11 @@ function openSelect(mode) {
 }
 function thumb(cvs, kind, alt) {
   const c = cvs.getContext('2d'), d = DINOS[kind];
-  cvs.width = 440; cvs.height = 300;
-  c.clearRect(0, 0, 440, 300);
+  cvs.width = 440; cvs.height = 260;
+  c.clearRect(0, 0, 440, 260);
   const f = { kind, d, side: 0, pal: alt ? d.alt : d.pal, x: 0, y: 0, vx: 0, vy: 0, facing: 1, grounded: true, state: 'idle', flash: 0, walk: 0, move: null };
-  c.save(); c.translate(225, 286);
-  const s = d.type === 'quad' ? 1.3 : 1.05;
+  c.save(); c.translate(225, 248);
+  const s = d.type === 'quad' ? (kind === 'stego' ? 1.05 : 1.15) : 0.94;
   c.scale(s, s);
   c.fillStyle = 'rgba(0,0,0,0.22)'; ell(c, 0, 4, d.halfW * 1.15, 10); c.fill();
   c.scale(d.art.s, d.art.s);
@@ -1295,13 +1532,14 @@ function goFromSelect() {
 }
 function openLevels() {
   const grid = $('levelGrid'); grid.innerHTML = '';
-  $('lvlSub').textContent = 'You are ' + DINOS[Save.data.dino].name + '. Win a level to open the next one.';
+  $('lvlSub').textContent = 'You are ' + DINOS[Save.data.dino].name + '. Win a level to open the next one — Level 10 is the Final Boss!';
   for (const L of LEVELS) {
     const b = document.createElement('button');
     const locked = L.n > Save.data.unlocked;
-    b.type = 'button'; b.className = 'card lvl' + (locked ? ' locked' : ''); b.disabled = locked; b.dataset.level = L.n;
+    b.type = 'button'; b.className = 'card lvl' + (locked ? ' locked' : '') + (L.boss ? ' boss' : ''); b.disabled = locked; b.dataset.level = L.n;
     const st = Save.data.stars[L.n] || 0;
-    b.innerHTML = '<span class="num">' + (locked ? '🔒' : L.n) + '</span><span class="vs">vs ' + DINOS[L.opp].name + '</span>' +
+    b.innerHTML = '<span class="num">' + (locked ? '🔒' : L.n) + '</span>' + (L.boss ? '<span class="badge">FINAL BOSS</span>' : '') +
+      '<span class="vs">vs ' + DINOS[L.opp].name + '</span>' +
       '<span class="vs">' + ARENAS[L.arena].name + '</span><span class="stars">' + [0, 1, 2].map((i) => i < st ? '★' : '<span class="off">★</span>').join('') + '</span>';
     b.addEventListener('click', () => startMatch({ mode: '1p', p1: Save.data.dino, p2: L.opp, level: L.n }));
     grid.appendChild(b);
@@ -1325,9 +1563,11 @@ function showResult(w, stars) {
       add('Play again', champ, () => startMatch({ mode: '1p', p1: G.kinds[0], p2: G.kinds[1], level: G.level }));
       add('Levels', false, openLevels);
     } else {
-      $('resTitle').textContent = 'So close!';
+      $('resTitle').textContent = G.level === LEVEL_COUNT ? 'Apex Defeat!' : 'So close!';
       $('resStars').innerHTML = '';
-      $('resSub').textContent = 'The computer\'s ' + winner.d.name + ' won this time. Try blocking with S or ↓, and save your power move for when you\'re close.';
+      $('resSub').textContent = G.level === LEVEL_COUNT
+        ? 'The Final Boss ' + winner.d.name + ' is relentless! Time a Perfect Block right before impact, punish its recovery, or jump over its guard.'
+        : 'The computer\'s ' + winner.d.name + ' won this time. Tap Block (S or ↓) right before a hit for a Perfect Block, then strike back!';
       add('Try again', true, () => startMatch({ mode: '1p', p1: G.kinds[0], p2: G.kinds[1], level: G.level }));
       add('Change dino', false, () => openSelect('1p'));
       add('Levels', false, openLevels);
@@ -1412,10 +1652,17 @@ function selectKeys(e) {
     }
     return;
   }
-  // two players: P1 = A/D + F, P2 = arrows + K / Enter
-  if (e.code === 'KeyA' || e.code === 'KeyD') { sel.cur1 = (sel.cur1 + (e.code === 'KeyA' ? -1 : 1) + 5) % 5; if (sel.p1 && !sel.p2) sel.p1 = ORDER[sel.cur1]; markCursors(); e.preventDefault(); return; }
+  // two players: P1 = WASD + F, P2 = arrows + K / Enter
+  const n = ORDER.length;
+  if (e.code === 'KeyA' || e.code === 'KeyD' || e.code === 'KeyW' || e.code === 'KeyS') {
+    const step = e.code === 'KeyA' ? -1 : e.code === 'KeyD' ? 1 : e.code === 'KeyW' ? -5 : 5;
+    sel.cur1 = (sel.cur1 + step + n) % n; if (sel.p1 && !sel.p2) sel.p1 = ORDER[sel.cur1]; markCursors(); e.preventDefault(); return;
+  }
   if (e.code === 'KeyF') { pickDino(ORDER[sel.cur1], 0); e.preventDefault(); return; }
-  if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') { sel.cur2 = (sel.cur2 + (e.code === 'ArrowLeft' ? -1 : 1) + 5) % 5; cards[sel.cur2].focus(); e.preventDefault(); return; }
+  if (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+    const step = e.code === 'ArrowLeft' ? -1 : e.code === 'ArrowRight' ? 1 : e.code === 'ArrowUp' ? -5 : 5;
+    sel.cur2 = (sel.cur2 + step + n) % n; cards[sel.cur2].focus(); e.preventDefault(); return;
+  }
   if (e.code === 'KeyK' || ((e.code === 'Enter' || e.code === 'NumpadEnter') && document.activeElement.classList.contains('dino-card'))) {
     if (!sel.p1 && e.code !== 'KeyK') return; // Enter with no P1 pick: let the click pick for P1
     if (e.code === 'KeyK' || sel.p1) { pickDino(ORDER[cards.indexOf(document.activeElement) >= 0 ? cards.indexOf(document.activeElement) : sel.cur2], 1); e.preventDefault(); }
@@ -1476,7 +1723,7 @@ function showKeysHint() {
 
 /* Test hooks (used by automated checks; harmless for players) */
 window.DinoDuel = {
-  DINOS, LEVELS,
+  DINOS, ORDER, LEVELS, aiFor,
   startMatch,
   step(sec, noDraw) { const n = Math.round(sec * 120); for (let i = 0; i < n; i++) update(1 / 120); if (!noDraw) render(); },
   state() {

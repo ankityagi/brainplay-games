@@ -156,6 +156,7 @@ body.touch #tools { right: auto; left: 50%; transform: translateX(-50%); }
       <div><b>Perfect Block.</b> Hold <b>Block</b> to stop hits — tap it right before impact for a golden <b>Perfect Block</b> (0 damage + bonus power) and counter!</div>
       <div><b>Player 1:</b> <kbd>A</kbd> <kbd>D</kbd> move, <kbd>W</kbd> jump, <kbd>S</kbd> block, <kbd>F</kbd> hit, <kbd>G</kbd> power move.</div>
       <div><b>Player 2:</b> <kbd>←</kbd> <kbd>→</kbd> move, <kbd>↑</kbd> jump, <kbd>↓</kbd> block, <kbd>K</kbd> hit, <kbd>L</kbd> power move.</div>
+      <div><b>Leap over.</b> Jump when you're close to the other dino to flip right over it and swap sides! Hold away from it for a normal jump.</div>
     </div>
   </div>
 </section>
@@ -219,6 +220,8 @@ body.touch #tools { right: auto; left: 50%; transform: translateX(-50%); }
    ============================================================ */
 const W = 1280, H = 720, GROUND = 618, LEFT = 60, RIGHT = 1220, GRAV = 2900;
 const ROUND_TIME = 60, ROUNDS_TO_WIN = 2, POWER_FILL = 16, LEVEL_COUNT = 10, PERFECT_BLOCK_WIN = 0.16;
+// Leap over: jump while close to the other dino to sail over it and swap sides
+const LEAP_RANGE = 240, LEAP_CD = 1.4;
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const approach = (v, t, d) => v < t ? Math.min(t, v + d) : Math.max(t, v - d);
@@ -429,7 +432,7 @@ const Sound = {
 };
 
 /* ---------------- Input ---------------- */
-function blankInput() { return { left: false, right: false, block: false, jumpBuf: 0, atkBuf: 0, spBuf: 0 }; }
+function blankInput() { return { left: false, right: false, block: false, jumpBuf: 0, atkBuf: 0, spBuf: 0, leap: true }; }
 const P1KEYS = { KeyA: 'left', KeyD: 'right', KeyW: 'jump', KeyS: 'block', KeyF: 'attack', KeyG: 'special' };
 const P2KEYS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'jump', ArrowDown: 'block', KeyK: 'attack', KeyL: 'special', Period: 'attack', Slash: 'special', Enter: 'attack', Numpad1: 'attack', Numpad2: 'special', NumpadEnter: 'attack' };
 function keyAction(code) {
@@ -470,6 +473,7 @@ function makeFighter(kind, side, palAlt) {
     hp: d.hp, maxHp: d.hp, hpLag: d.hp, meter: 30, state: 'idle', stateT: 0, move: null, moveName: '', moveT: 0, moveId: 0,
     hitDone: false, pounced: false, flash: 0, walk: 0, dmgScale: 1, speedScale: 1, meterScale: 1, recScale: 1, blockAge: 0,
     inp: side === 0 ? humanIn[0] : humanIn[1], meterFlash: 0,
+    leaping: false, leapT: 0, leapDur: 0, leapDir: 0, leapCd: 0,
   };
 }
 
@@ -492,6 +496,7 @@ function newRound() {
   const a = makeFighter(G.kinds[0], 0, false), b = makeFighter(G.kinds[1], 1, same);
   if (G.ai) {
     b.inp = blankInput();
+    b.inp.leap = false; // the computer only leaps when its brain asks for it
     b.maxHp = b.hp = b.hpLag = Math.round(b.d.hp * G.ai.hp);
     b.dmgScale = G.ai.dmg;
     b.speedScale = G.ai.speed;
@@ -519,6 +524,7 @@ function updateFighter(f, opp, dt, canAct) {
   const inp = f.inp;
   inp.jumpBuf = Math.max(0, inp.jumpBuf - dt); inp.atkBuf = Math.max(0, inp.atkBuf - dt); inp.spBuf = Math.max(0, inp.spBuf - dt);
   f.flash = Math.max(0, f.flash - dt); f.meterFlash = Math.max(0, f.meterFlash - dt);
+  f.leapCd = Math.max(0, f.leapCd - dt); if (f.leaping) f.leapT += dt;
   f.hpLag = approach(f.hpLag, f.hp, (f.hpLag - f.hp > 0 ? 52 : 220) * dt);
   if (canAct) f.meter = Math.min(100, f.meter + POWER_FILL * f.meterScale * dt);
 
@@ -550,6 +556,7 @@ function updateFighter(f, opp, dt, canAct) {
     if (st === 'win' && f.grounded && rand() < dt * 1.4) { f.vy = -580; f.grounded = false; }
   } else if (canAct) {
     // idle / walk / jump / block
+    if (f.leaping) return physics(f, dt); // mid-leap: sail over, no steering or attacks
     if (inp.spBuf > 0) {
       inp.spBuf = 0;
       if (f.meter >= 100) { startMove(f, 'special'); return physics(f, dt); }
@@ -557,7 +564,9 @@ function updateFighter(f, opp, dt, canAct) {
     }
     if (inp.atkBuf > 0) { inp.atkBuf = 0; startMove(f, 'attack'); return physics(f, dt); }
     if (inp.jumpBuf > 0 && f.grounded) {
-      inp.jumpBuf = 0; f.vy = -f.d.jump; f.grounded = false; f.state = 'jump';
+      inp.jumpBuf = 0;
+      if (tryLeap(f, opp)) return physics(f, dt);
+      f.vy = -f.d.jump; f.grounded = false; f.state = 'jump';
     }
     const dir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
     const spd = f.d.speed * f.speedScale;
@@ -584,7 +593,7 @@ function physics(f, dt) {
   if (!f.grounded) {
     f.vy += GRAV * dt; f.y += f.vy * dt;
     if (f.y >= GROUND) {
-      f.y = GROUND; f.vy = 0; f.grounded = true;
+      f.y = GROUND; f.vy = 0; f.grounded = true; f.leaping = false;
       if (f.state === 'jump') f.state = 'idle';
       dust(f.x, f.y); dust(f.x, f.y);
     }
@@ -592,6 +601,26 @@ function physics(f, dt) {
   f.x = clamp(f.x, LEFT + f.d.halfW, RIGHT - f.d.halfW);
   if (Math.abs(f.vx) > 30 && f.grounded) f.walk += f.vx * f.facing * dt * 0.036;
   else if (f.state === 'walk') f.walk += dt * 7;
+}
+
+// Jump right over the other dino and land on its far side (they swap places).
+// Happens when you jump close to the other dino without holding away from it.
+function tryLeap(f, o) {
+  if (!f.inp.leap || f.leapCd > 0 || o.state === 'ko') return false;
+  const dx = o.x - f.x, dir = dx >= 0 ? 1 : -1, dist = Math.abs(dx);
+  const contact = (f.d.halfW + o.d.halfW) * 0.86;
+  if (dist > contact + LEAP_RANGE) return false;
+  if ((dir > 0 && f.inp.left && !f.inp.right) || (dir < 0 && f.inp.right && !f.inp.left)) return false; // holding away: normal jump
+  const tx = o.x + dir * (contact + 34);
+  if (tx < LEFT + f.d.halfW || tx > RIGHT - f.d.halfW) return false; // no room on the far side
+  const tall = (o.d.type === 'biped' ? 190 : 130) * o.d.art.s;
+  const peak = clamp(tall + 40, 200, 270);
+  const vy = Math.sqrt(2 * GRAV * peak), T = 2 * vy / GRAV;
+  f.vy = -vy; f.vx = (tx - f.x) / T; f.grounded = false; f.state = 'jump';
+  f.leaping = true; f.leapT = 0; f.leapDur = T; f.leapDir = dir; f.leapCd = LEAP_CD;
+  dust(f.x, f.y); dust(f.x - dir * 24, f.y);
+  Sound.whoosh();
+  return true;
 }
 
 function faceEachOther(a, b) {
@@ -602,6 +631,7 @@ function faceEachOther(a, b) {
 }
 
 function separate(a, b) {
+  if (a.leaping || b.leaping) return;
   const minD = (a.d.halfW + b.d.halfW) * 0.86;
   const dx = b.x - a.x, dist = Math.abs(dx);
   if (dist >= minD || Math.abs(a.y - b.y) > 120) return;
@@ -719,7 +749,7 @@ function runAI(ai, me, foe, dt) {
     if (dist < reach && facingMe) {
       if ((fmv.dash || fmv.lunge) && me.grounded && rand() < ai.dodge * 0.6) {
         inp.block = false;
-        inp.jumpBuf = 0.18;
+        inp.jumpBuf = 0.18; inp.leap = true; // leap over the charging player
         inp.left = dir < 0; inp.right = dir > 0;
         ai.t = 0.12;
         return;
@@ -763,7 +793,7 @@ function runAI(ai, me, foe, dt) {
 
   // Anti-turtle: jump over a player who sits in block, or apply pressure
   if (foe.state === 'block' && dist < atkR + 40 && me.grounded && rand() < ai.dodge * 0.65) {
-    inp.jumpBuf = 0.2;
+    inp.jumpBuf = 0.2; inp.leap = true;
     if (dir > 0) inp.right = true; else inp.left = true;
     return;
   }
@@ -785,7 +815,7 @@ function runAI(ai, me, foe, dt) {
     if (dir > 0) inp.right = true; else inp.left = true;
   }
   const nearWall = me.x < LEFT + me.d.halfW + 50 || me.x > RIGHT - me.d.halfW - 50;
-  if (rand() < ai.jump || (nearWall && dist < atkR + 90 && rand() < 0.45)) inp.jumpBuf = 0.2;
+  if (rand() < ai.jump || (nearWall && dist < atkR + 90 && rand() < 0.45)) { inp.jumpBuf = 0.2; inp.leap = false; }
 }
 
 /* ---------------- Main update ---------------- */
@@ -1028,6 +1058,10 @@ function poseOf(f) {
   if (P.hurt) { P.tilt = -0.18; P.jaw = 0.5; }
   if (P.ko) { P.crouch = 22; P.tilt = -0.35; }
   if (P.win) { P.jaw = 0.6 + Math.sin(G.time * 10) * 0.3; }
+  if (f.leaping && f.state === 'jump' && f.leapDur > 0) { // forward flip over the other dino
+    P.roll = f.leapDir * f.facing * clamp(f.leapT / f.leapDur, 0, 1) * Math.PI * 2;
+    P.jaw = 0.4;
+  }
   return P;
 }
 
@@ -1043,6 +1077,7 @@ function drawFighter(c, f) {
   if (P.ko) { c.rotate(P.tilt); }
   const pal = f.flash > 0 ? { body: '#ffffff', belly: '#ffffff', dark: '#f0f0f0', accent: '#ffffff' } : f.pal;
   c.scale(art.s, art.s);
+  if (P.roll) { c.translate(0, art.bodyY); c.rotate(P.roll); c.translate(0, -art.bodyY); }
   if (f.d.type === 'biped') drawBiped(c, f.kind, art, pal, P);
   else drawQuad(c, f.kind, art, pal, P);
   c.restore();
@@ -1413,7 +1448,7 @@ function render() {
   drawArena(c, ARENAS[G.arena], x0, x1, y0, y1, G.time);
   if (G.fighters.length) {
     const [a, b] = G.fighters;
-    const order = (a.state === 'attack' || a.state === 'special') ? [b, a] : [a, b];
+    const order = (a.leaping || ((a.state === 'attack' || a.state === 'special') && !b.leaping)) ? [b, a] : [a, b];
     for (const f of order) drawFighter(c, f);
   }
   drawEffects(c);
@@ -1715,8 +1750,8 @@ function showKeysHint() {
   const h = $('keysHint');
   if (isTouch) { h.hidden = true; return; }
   h.innerHTML = G.mode === '2p'
-    ? '<b style="color:#9fd0ff">P1</b> <kbd>A</kbd><kbd>D</kbd> move <kbd>W</kbd> jump <kbd>S</kbd> block <kbd>F</kbd> hit <kbd>G</kbd> power &nbsp;·&nbsp; <b style="color:#ffa3ad">P2</b> <kbd>←</kbd><kbd>→</kbd> move <kbd>↑</kbd> jump <kbd>↓</kbd> block <kbd>K</kbd> hit <kbd>L</kbd> power'
-    : '<kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> move &nbsp; <kbd>↑</kbd>/<kbd>W</kbd> jump &nbsp; <kbd>↓</kbd>/<kbd>S</kbd> block &nbsp; <kbd>F</kbd>/<kbd>Space</kbd> hit &nbsp; <kbd>G</kbd> power move &nbsp; <kbd>Esc</kbd> pause';
+    ? '<b style="color:#9fd0ff">P1</b> <kbd>A</kbd><kbd>D</kbd> move <kbd>W</kbd> jump/leap over <kbd>S</kbd> block <kbd>F</kbd> hit <kbd>G</kbd> power &nbsp;·&nbsp; <b style="color:#ffa3ad">P2</b> <kbd>←</kbd><kbd>→</kbd> move <kbd>↑</kbd> jump/leap over <kbd>↓</kbd> block <kbd>K</kbd> hit <kbd>L</kbd> power'
+    : '<kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> move &nbsp; <kbd>↑</kbd>/<kbd>W</kbd> jump (close up: leap over!) &nbsp; <kbd>↓</kbd>/<kbd>S</kbd> block &nbsp; <kbd>F</kbd>/<kbd>Space</kbd> hit &nbsp; <kbd>G</kbd> power move &nbsp; <kbd>Esc</kbd> pause';
   h.hidden = false; h.classList.remove('fade');
   clearTimeout(hintTimer); hintTimer = setTimeout(() => h.classList.add('fade'), 7000);
 }
@@ -1730,11 +1765,13 @@ window.DinoDuel = {
     return {
       phase: G.phase, mode: G.mode, round: G.round, wins: G.wins.slice(), timer: G.timer, level: G.level,
       matchWinner: G.matchWinner, roundWinner: G.roundWinner,
-      fighters: G.fighters.map((f) => ({ kind: f.kind, hp: f.hp, maxHp: f.maxHp, x: f.x, y: f.y, state: f.state, meter: f.meter })),
+      fighters: G.fighters.map((f) => ({ kind: f.kind, hp: f.hp, maxHp: f.maxHp, x: f.x, y: f.y, state: f.state, meter: f.meter, facing: f.facing, leaping: f.leaping, leapCd: f.leapCd, grounded: f.grounded })),
       unlocked: Save.data.unlocked,
     };
   },
   input: humanIn,
+  press(p, action, down) { setAction(p, action, down !== false); },
+  place(i, x) { const f = G.fighters[i]; f.x = x; f.vx = 0; },
 };
 </script>
 </html>

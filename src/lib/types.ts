@@ -14,10 +14,11 @@ export type GameId =
   | 'cricket'
   | 'dinoduel'
   | 'dinotrucks'
-  | 'jellyjam';
+  | 'jellyjam'
+  | 'basketball';
 
 /** Games that ship as their own static page (GameMeta.embedSrc) instead of a stage component. */
-export type EmbeddedGameId = 'racing' | 'cricket' | 'dinoduel' | 'dinotrucks' | 'jellyjam';
+export type EmbeddedGameId = 'racing' | 'cricket' | 'dinoduel' | 'dinotrucks' | 'jellyjam' | 'basketball';
 
 export type GameCategory = 'learn' | 'play';
 

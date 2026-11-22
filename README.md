@@ -1,6 +1,6 @@
 # BrainPlay Games
 
-16 free browser games with no sign-up required, hosted at `games.ankityagi.online`.
+17 free browser games with no sign-up required, hosted at `games.ankityagi.online`.
 Progress and play-time state are saved per-browser in `localStorage`, and the whole site works offline once visited online.
 
 ## Games
@@ -30,6 +30,7 @@ Progress and play-time state are saved per-browser in `localStorage`, and the wh
 | 🦕 Dino Duel (`dinoduel`) | 10 levels (embedded) | Side-view 1P/2P dinosaur fighting game with 10 dinosaurs, Perfect Block parries, best-of-3 rounds, and an apex Level 10 boss |
 | 🦖 Dino Truck Rumble (`dinotrucks`) | 6 levels (embedded) | 3D Three.js dino truck racing game with 5 trucks and per-truck attacks |
 | 🍬 Jelly Jam (`jellyjam`) | 10 levels (embedded) | Falling jelly-shapes puzzle game with Fizz Pop bombs and endless mode |
+| 🏀 Court Kings (`basketball`) | 6 levels + drills (embedded) | 3D Three.js 3v3 basketball with shot timing, catch-and-shoot passing, ankle-breaker crossovers, and 3 skill drills |
 
 ## Coin gate and play time
 

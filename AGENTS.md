@@ -2,7 +2,7 @@
 
 ## Overview
 
-BrainPlay Games is a client-side collection of **16 free browser games** for kids (6 **Learn**, 10 **Play**), deployed to GitHub Pages at `https://games.ankityagi.online` (`public/CNAME`). There is no backend and no authentication; all progress, question rotation, and coin-gate state live in `localStorage`. The site is designed to work **fully offline** (e.g. on flights) after a single online visit.
+BrainPlay Games is a client-side collection of **17 free browser games** for kids (6 **Learn**, 11 **Play**), deployed to GitHub Pages at `https://games.ankityagi.online` (`public/CNAME`). There is no backend and no authentication; all progress, question rotation, and coin-gate state live in `localStorage`. The site is designed to work **fully offline** (e.g. on flights) after a single online visit.
 
 ## Tech Stack & Tooling
 
@@ -31,7 +31,7 @@ Routes (`src/App.tsx`, using `HashRouter`):
 
 ## Two Game Architectures
 
-All 16 games are declared in `src/lib/games.ts` (`GAMES`) and typed in `src/lib/types.ts` (`GameId`).
+All 17 games are declared in `src/lib/games.ts` (`GAMES`) and typed in `src/lib/types.ts` (`GameId`).
 
 ### 1. React 10-Stage Games (11 games)
 Live under `src/games/<id>/` and registered via `React.lazy` in `src/lib/registry.tsx` (`GAME_COMPONENTS`). Each default-exported component implements `GameComponentProps` (`{ stage: number; onFinish: ({ passed, stars, score }) => void }`).
@@ -56,7 +56,7 @@ Shared utilities in `src/lib/`:
 - `rotation.ts` — `createRotationPicker` persisted under `brainplay:rotation:<key>` so pools avoid repeats across stages/reloads
 - `mathProblem.ts` — shared arithmetic problem & distractor generator
 
-### 2. Standalone Embedded Static Games (5 games, all `play`)
+### 2. Standalone Embedded Static Games (6 games, all `play`)
 Self-contained HTML/JS pages under `public/<slug>/` rendered inside `EmbeddedGame.tsx` (full-height `<iframe>`, auto-focused on load for keyboard controls). They manage their own levels/menus/canvas/WebGL instead of the 10-stage React shell, declare `embedSrc` and `levelsLabel` in `src/lib/games.ts`, and are listed in `EmbeddedGameId` in `src/lib/types.ts` (excluded from `GAME_COMPONENTS`).
 
 - `racing` — **Zoom Valley** (`/zoom-valley/index.html`, 4 levels, local `three.min.js`, 2 tracks, 5 cars, 2P split screen)
@@ -64,6 +64,7 @@ Self-contained HTML/JS pages under `public/<slug>/` rendered inside `EmbeddedGam
 - `dinoduel` — **Dino Duel** (`/dino-duel/index.html`, 10 levels, 1P/2P dino fighter, 10 dinos, Perfect Block parries, best of 3, Level 10 Giganotosaurus boss)
 - `dinotrucks` — **Dino Truck Rumble** (`/dino-trucks/index.html`, 6 levels, local `three.min.js`, 5 trucks with unique attacks)
 - `jellyjam` — **Jelly Jam** (`/jelly-jam/index.html` + `/jelly-jam/engine.js`, 10 levels + endless, testable pure JS engine)
+- `basketball` — **Court Kings** (`/court-kings/index.html` + `/court-kings/engine.js`, local `three.min.js`, 6 3v3 levels + 3 skill drills, testable pure JS engine)
 
 ## Coin Gate, Play Codes & Offline Support
 
@@ -80,4 +81,4 @@ Self-contained HTML/JS pages under `public/<slug>/` rendered inside `EmbeddedGam
 4. **Tests to maintain (`tests/`):**
    - `games-registry.test.ts` — verifies every React game has a component, every `embedSrc` exists in `public/`, no external scripts, plus smoke/engine tests for embedded games
    - `playgate.test.ts`, `playgate-ui.test.tsx` — code verification, parent code, timer/gate UI
-   - `chess-puzzles.test.ts`, `map-countries.test.ts`, `map-feedback.test.ts`, `sudoku.test.ts`, `progress.test.ts`, `scoring.test.ts`, `rotation.test.ts`
+   - `chess-puzzles.test.ts`, `dino-stages.test.ts`, `dino-ui.test.tsx`, `map-countries.test.ts`, `map-feedback.test.ts`, `sudoku.test.ts`, `progress.test.ts`, `scoring.test.ts`, `rotation.test.ts`

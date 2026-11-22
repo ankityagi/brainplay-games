@@ -139,6 +139,16 @@ export const GAMES: GameMeta[] = [
     embedSrc: '/jelly-jam/index.html',
     levelsLabel: '10 levels',
   },
+  {
+    id: 'basketball',
+    title: 'Court Kings',
+    tagline: '3D 3v3 basketball — pass, cross up, and time your shot',
+    emoji: '🏀',
+    category: 'play',
+    accent: 'from-orange-500 to-amber-500',
+    embedSrc: '/court-kings/index.html',
+    levelsLabel: '6 levels + drills',
+  },
 ];
 
 export function getGameMeta(id: string): GameMeta | undefined {

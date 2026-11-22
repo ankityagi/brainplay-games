@@ -4,6 +4,7 @@
    other files load from the saved copy first. Google Fonts are saved the first time they load. */
 const PREFIX = 'brainplay-';
 const FONTS = PREFIX + 'fonts';
+const NET_WAIT_MS = 3000;
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -38,23 +39,35 @@ self.addEventListener('fetch', (event) => {
       const cache = await caches.open(FONTS);
       const hit = await cache.match(req);
       if (hit) return hit;
-      const res = await fetch(req);
-      if (res.ok || res.type === 'opaque') cache.put(req, res.clone());
-      return res;
+      try {
+        const res = await fetch(req);
+        if (res.ok || res.type === 'opaque') cache.put(req, res.clone());
+        return res;
+      } catch {
+        return Response.error(); // no font saved yet: the game uses a plain font
+      }
     })());
     return;
   }
   if (url.origin !== self.location.origin) return;
   if (url.pathname === '/precache.json' || url.pathname === '/sw.js') return;
 
-  if (req.mode === 'navigate') {
-    // fresh page when online, saved page offline (the app routes with #, so "/" serves it all)
+  // games inside the site's frame come from the saved copy of this build first (like scripts do)
+  if (req.mode === 'navigate' && req.destination !== 'iframe') {
+    // fresh page when online, saved page offline (the app routes with #, so "/" serves it all).
+    // Plane and hotel Wi-Fi can be "connected" but never answer, or bounce every page to a
+    // sign-up page, so the saved page is used after 3 seconds or on any answer that isn't a real page.
     event.respondWith((async () => {
+      const saved = async () => (await caches.match(req, { ignoreSearch: true })) || (await caches.match('/index.html'));
+      const net = fetch(req).then((res) => (res.ok && res.type === 'basic' ? res : Promise.reject(new Error('not a page'))));
+      const late = new Promise((r) => setTimeout(r, NET_WAIT_MS)).then(saved);
       try {
-        return await fetch(req);
+        const res = await Promise.race([net, late.then((s) => s || net)]);
+        if (res) return res;
       } catch {
-        return (await caches.match(req, { ignoreSearch: true })) || (await caches.match('/index.html')) || Response.error();
+        /* fall through to the saved page */
       }
+      return (await saved()) || (await net.catch(() => null)) || Response.error();
     })());
     return;
   }
